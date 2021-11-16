@@ -1,4 +1,8 @@
+import os
 from setuptools import setup
+
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
 
 setup(
     name='ong_utils',
@@ -8,5 +12,6 @@ setup(
     license='',
     author='ongpi',
     author_email='oneirag@yahoo.es',
-    description='Common utilities for python projects'
+    description='Common utilities for python projects',
+    install_requires=required,
 )
