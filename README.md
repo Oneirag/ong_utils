@@ -1,4 +1,4 @@
-#Ong_Utils
+# Ong_Utils
 Simple package with some utils to import in any project:
 * Class to managate configuration files in yaml or json 
 * logger and a timer to record elapsed times for optimizing some processes 
@@ -23,7 +23,7 @@ res = http.request("GET", config('url'))
 logger.info("Sample log")
 ```
 
-##Configuration files
+## Configuration files
 Config files are yaml/json files located (by default) in `~/.config/ongpi/{project_name}.{extension}`. 
 The file extension can be yaml, yml, json or js.
 File can have this form:
@@ -57,7 +57,7 @@ project_name2:
   key_for_project2: value
 ```
 and config method can only access to configuration of current project
-##Timers
+## Timers
 `OngTimer` class uses `tic(msg)` to start timer and `toc(msg)` to stop timer and show a message with the elapsed time.
 Several timers can be created with different `msg`. The parameter `msg` is used to link methods `tic(msg)` and `toc(msg)`,
 so the time is measured from tic to toc.Before a toc there must be a tic, so if there is not a `tic(msg)` with the same `msg` as a `toc(msg)` 
