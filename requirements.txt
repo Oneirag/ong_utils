@@ -4,3 +4,4 @@ pyopenssl
 python-dateutil
 pyyaml
 ujson
+idna
