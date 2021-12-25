@@ -37,3 +37,8 @@ def is_debugging() -> bool:
     if gettrace:
         return True
     return False
+
+
+def cookies2header(cookies: dict) -> dict:
+    """Converts cookies in dict to header field 'Cookie' for use in urllib3"""
+    return dict(Cookie="; ".join(f"{k}={v}" for k, v in cookies.items()))

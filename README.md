@@ -1,11 +1,12 @@
 # Ong_Utils
 Simple package with some utils to import in any project:
-* Class to managate configuration files in yaml or json 
+* Class to manage configuration files in yaml or json 
 * logger and a timer to record elapsed times for optimizing some processes 
 * a http instance of urllib3 with retries and timeouts 
 * a TZ_LOCAL variable with the local timezone
 of the computer).   
 * a is_debugging function that returns True when debugging code
+* a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3
 
 
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
