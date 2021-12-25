@@ -12,6 +12,7 @@ Path can be overridden either with ONG_CONFIG_PATH environ variable
 import certifi
 import dateutil.tz
 import urllib3.contrib.pyopenssl
+import sys
 
 from ong_utils.config import OngConfig
 from ong_utils.timers import OngTimer
@@ -27,3 +28,12 @@ http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
                            )
 
 LOCAL_TZ = dateutil.tz.tzlocal()
+
+
+def is_debugging() -> bool:
+    """Returns true if debugging"""
+    gettrace = sys.gettrace()
+    # Check for debugging, if so run debug server
+    if gettrace:
+        return True
+    return False

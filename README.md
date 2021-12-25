@@ -5,6 +5,8 @@ Simple package with some utils to import in any project:
 * a http instance of urllib3 with retries and timeouts 
 * a TZ_LOCAL variable with the local timezone
 of the computer).   
+* a is_debugging function that returns True when debugging code
+
 
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
 ```python

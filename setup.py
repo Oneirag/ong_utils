@@ -1,4 +1,3 @@
-import os
 from setuptools import setup
 
 with open('requirements.txt') as f:
@@ -6,7 +5,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='ong_utils',
-    version='0.1',
+    version='0.1.1',
     packages=['ong_utils'],
     url='www.neirapinuela.es',
     license='',
