@@ -7,6 +7,7 @@ Simple package with some utils to import in any project:
 of the computer).   
 * a is_debugging function that returns True when debugging code
 * a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3
+* a get_cookies function to extract a dict of cookies from a response of a urllib3 request
 
 
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
