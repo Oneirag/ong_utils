@@ -2,7 +2,8 @@
 Simple package with some utils to import in any project:
 * Class to manage configuration files in yaml or json 
 * logger and a timer to record elapsed times for optimizing some processes 
-* a http instance of urllib3 with retries and timeouts 
+* a create_pool_manager function to create instances of urllib3.PoolManager with retries and timeouts and checking of 
+https connections 
 * a TZ_LOCAL variable with the local timezone
 of the computer).   
 * a is_debugging function that returns True when debugging code
@@ -13,7 +14,7 @@ of the computer).
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
 ```python
 import pandas as pd
-from ong_utils import OngConfig, LOCAL_TZ, http, OngTimer
+from ong_utils import OngConfig, LOCAL_TZ, OngTimer
 _cfg = OngConfig("mypackage")
 config = _cfg.config
 logger = _cfg.logger
@@ -65,12 +66,18 @@ and config method can only access to configuration of current project
 `OngTimer` class uses `tic(msg)` to start timer and `toc(msg)` to stop timer and show a message with the elapsed time.
 Several timers can be created with different `msg`. The parameter `msg` is used to link methods `tic(msg)` and `toc(msg)`,
 so the time is measured from tic to toc.Before a toc there must be a tic, so if there is not a `tic(msg)` with the same `msg` as a `toc(msg)` 
-an exception is risen. Example Usage:
+an exception is risen. 
+Additionally, it can be used as a context manager
+
+Example Usage:
 ```python
     from ong_utils import OngTimer
     from time import sleep
 
-    tic = OngTimer()    # if used OngTimer(False), all prints would be disabled
+    #############################################################################
+    # Standard use (defining an instance and using tic, toc and toc_loop methods)
+    #############################################################################
+    tic = OngTimer()  # if used OngTimer(False), all prints would be disabled
 
     tic.tic("Starting")
     for i in range(10):
@@ -80,11 +87,52 @@ an exception is risen. Example Usage:
         tic.tic("Loop")
         sleep(0.1)
         if i != 5:
-            tic.toc_loop("Loop")        # Will print elapsed time up to iter #5
+            tic.toc_loop("Loop")  # Will print elapsed time up to iter #5
         else:
-            tic.toc("Loop")             # Will print in this case
+            tic.toc("Loop")  # Will print in this case
     sleep(1)
-    tic.print_loop("Loop")           # Forces print In any case it would be printed in destruction of tic instance
-    tic.toc("Starting")     # Will print total time of the whole loop
-    tic.toc("This msg has not been defined in a previous tick so exception will be risen")
+    tic.print_loop("Loop")  # Forces print In any case it would be printed in destruction of tic instance
+    tic.toc("Starting")  # Will print total time of the whole loop
+
+    ########################################################################################
+    # Using toc/toc_loop with a non previously defined msg will raise a ValueError Exception
+    ########################################################################################
+    try:
+        tic.toc("This msg has not been defined in a previous tick so ValueError Exception will be risen")
+    except ValueError as ve:
+        print(ve)
+
+    #############################################################
+    # Use as a context manager. Won't work accumulating in a loop
+    #############################################################
+    with OngTimer(msg="Testing sleep"):
+        print("hello context manager")
+        sleep(0.27)
+    with OngTimer().context_manager("Testing sleep"):  # Exactly same as above
+        print("hello context manager")
+        sleep(0.27)
+    # Use context manager (but testing that it can be disabled)
+    with OngTimer(msg="Testing sleep disabled", enabled=False):
+        print("hello disabled context manager")
+        sleep(0.22)
+    # use global timer as context manager
+    existing_instance = OngTimer()
+    with existing_instance.context_manager("Example using an existing context manager instance"):
+        sleep(.19)
+```
+## Urllib3 utils
+Module ong_utils.urllib3 includes simple functions to treat cookies in urllib3.
+
+Example:
+```python
+from ong_utils import create_pool_manager, cookies2header, get_cookies
+url = "whichevervalidurl"
+http = create_pool_manager()    # Creates a PoolManager with retries
+req = http.request("get", url)
+# get cookies (as a dict)
+cookies = get_cookies(req)
+headers = {"Accept": "text/html;application/json"}
+# append cookies to the headers dict
+headers.update(cookies2header(cookies))
+req.http.request("get", url, headers=headers)       # Using cookies from previous response
 ```

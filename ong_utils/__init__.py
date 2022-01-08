@@ -1,6 +1,6 @@
 """
 Common imports for projects
--   http: a pool manager for urllib3 that check https certificates
+-   create_pool_manager: to create a pool manager for urllib3 that check https certificates
 -   LOCAL_TZ: a timezone object with the local timezone
 -   OngConfig: a config object
 -   is_debugging: true if in debug code
@@ -12,22 +12,9 @@ where extension can be yaml, yml, json or js
 Path can be overridden either with ONG_CONFIG_PATH environ variable
 """
 
-import dateutil.tz
-import sys
-
 
 from ong_utils.config import OngConfig
 from ong_utils.timers import OngTimer
-from ong_utils.urlib3 import http, cookies2header, get_cookies
+from ong_utils.urllib3 import create_pool_manager, cookies2header, get_cookies
+from ong_utils.utils import LOCAL_TZ, is_debugging
 
-
-LOCAL_TZ = dateutil.tz.tzlocal()
-
-
-def is_debugging() -> bool:
-    """Returns true if debugging"""
-    gettrace = sys.gettrace()
-    # Check for debugging, if so run debug server
-    if gettrace:
-        return True
-    return False
