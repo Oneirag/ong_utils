@@ -17,20 +17,22 @@ from http.cookiejar import CookieJar
 from urllib.request import Request
 
 
-def create_pool_manager(status=10, backoff_factor=0.15) -> urllib3.PoolManager:
+def create_pool_manager(status=10, backoff_factor=0.15, **kwargs) -> urllib3.PoolManager:
     """
     Creates an urllib3.PoolManager instance, that checks https connections and optionally retries queries
     :param status: param to urllib3.util.Retry. Means number of times to retry in case of an error status
     (e.g. after 503 error), by default 10. Use 0 or None to disable retries
     :param backoff_factor: param to urllib3.util.Retry. Means, more or less, seconds to wait between retries
-    (read urllib3.util.Retry docs for more details)
-    :return: a urllib3.PoolManager that can be use with .request or .openurl methods
+    (read urllib3.util.Retry docs for more details), by default 0.15
+    :param kwargs: any other parameter will be passed to urllib3.util.Retry
+    :return: an urllib3.PoolManager instance that can be use with .request or .openurl methods
     """
     urllib3.contrib.pyopenssl.inject_into_urllib3()
     if status is not None and status > 0:
         retries = urllib3.util.Retry(
             status=status,      # Retry 10 times on error status (e.g. after 503 error)
             backoff_factor=backoff_factor,      # Aprox seconds to wait between retries
+            **kwargs
         )
     else:
         retries = None
