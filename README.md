@@ -61,7 +61,10 @@ project_name1:
 project_name2:
   key_for_project2: value
 ```
-and config method can only access to configuration of current project
+and config method can only access to configuration of current project.
+
+New values can be added to the configuration in execution time by calling `add_app_config`. That will persist the new values in the configuration file.
+
 ## Timers
 `OngTimer` class uses `tic(msg)` to start timer and `toc(msg)` to stop timer and show a message with the elapsed time.
 Several timers can be created with different `msg`. The parameter `msg` is used to link methods `tic(msg)` and `toc(msg)`,
