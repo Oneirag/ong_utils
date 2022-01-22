@@ -6,6 +6,8 @@ import ujson
 import yaml
 
 
+_missing = object()  # In order to use None as default value for function args, this value must be used
+
 class OngConfig:
     extensions_cfg = {
         '.yaml': (yaml.safe_load, yaml.dump),
@@ -67,6 +69,7 @@ class OngConfig:
         return os.path.join(self.config_path, filename)
 
     def create_default_config(self):
+        """Creates a config file with the contents of the current configuration"""
         cfg = {self.project_name: self.__app_cfg, "log": dict()}
         _, ext = os.path.splitext(self.config_filename)
         writer = self.extensions_cfg[ext][1]
@@ -86,15 +89,23 @@ class OngConfig:
     def logger(self):
         return self.__logger
 
-    def config(self, item, default_value=None):
+    def config(self, item, default_value=_missing):
         """Checks for a parameter in the configuration, and raises exception if not found.
         If not found but a non-None default_value is used, then default value is returned and no Exception raised"""
         if item in self.__app_cfg:
             return self.__app_cfg[item]
-        elif default_value is not None:
+        elif default_value is not _missing:
             return default_value
         else:
             raise ValueError(f"Item {item} not defined in {self.config_filename}")
+
+    def add_app_config(self, item: str, value):
+        """Adds a new value to app_config and stores it. Raises value error if item already existed"""
+        if item not in self.__app_cfg:
+            self.__app_cfg[item] = value
+            self.create_default_config()
+        else:
+            raise ValueError(f"Item {item} already existed in app config. Edit it manually")
 
 
 def _default_logger_config(app_name: str):
