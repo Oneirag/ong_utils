@@ -2,15 +2,18 @@
 Timer object for measuring elapsed time elapsed in some processes
 """
 from time import time
+import logging
 
 
 class _OngTic:
-    def __init__(self, msg):
+    def __init__(self, msg, logger=None, log_level: str = logging.DEBUG):
         """Starts timer with a msg that identifies the timer"""
         self.start_t = time()
         self.total_t = 0
         self.msg = msg
         self.is_loop = False
+        self.logger = logger
+        self.log_level = log_level
 
     def tic(self):
         """Starts to count time"""
@@ -26,7 +29,10 @@ class _OngTic:
 
     def print(self, extra_msg: str = ""):
         """Prints a message showing total elapsed time in seconds"""
-        print(f"Elapsed time for {self.msg}{extra_msg}: {self.total_t:.3f}s")
+        print_msg = f"Elapsed time for {self.msg}{extra_msg}: {self.total_t:.3f}s"
+        print(print_msg)
+        if self.logger:
+            self.logger.log(self.log_level, print_msg)
         self.is_loop = False  # To prevent further prints
 
     def __del__(self):
@@ -47,7 +53,7 @@ def is_self_enabled(func, *args, **kwargs):
 
 
 class OngTimer:
-    def __init__(self, enabled=True, msg: str = None):
+    def __init__(self, enabled=True, msg: str = None, logger=None, log_level=logging.DEBUG):
         """
         Creates a timer, but it does not start it.
         The class can be used as a context manager, e.g.:
@@ -64,18 +70,22 @@ class OngTimer:
 
         :param enabled: If enabled=False (defaults to True) does nothing
         :param msg: Needed only for using as a context manager (using the with keyword)
+        :param logger: optional logger to write messages (default value of None disables it)
+        :param log_level: optional log level for logger (defaults to DEBUG)
         """
         self.enabled = enabled
         self.msg = msg
         if not self.enabled:
             return
         self.__tics = dict()
+        self.logger = logger
+        self.log_level = log_level
 
     @is_self_enabled
     def tic(self, msg):
         """Starts timer for process identified by msg"""
         if msg not in self.__tics:
-            self.__tics[msg] = _OngTic(msg)
+            self.__tics[msg] = _OngTic(msg, logger=self.logger, log_level=self.log_level)
         ticobj = self.__tics.get(msg)
         ticobj.tic()
 
@@ -167,3 +177,11 @@ if __name__ == '__main__':
     existing_instance = OngTimer()
     with existing_instance.context_manager("Example using an existing context manager instance"):
         sleep(.19)
+
+    # Optionally: write also tick using a logger
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    with OngTimer(msg="Using a logger", logger=logging, log_level=logging.DEBUG):
+        sleep(0.2)
+
+
