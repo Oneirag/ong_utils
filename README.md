@@ -122,6 +122,13 @@ Example Usage:
     existing_instance = OngTimer()
     with existing_instance.context_manager("Example using an existing context manager instance"):
         sleep(.19)
+
+    # Optionally: write also tick using a logger
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    with OngTimer(msg="Using a logger", logger=logging, log_level=logging.DEBUG):
+        sleep(0.2)
+
 ```
 ## Urllib3 utils
 Module ong_utils.urllib3 includes simple functions to treat cookies in urllib3.
