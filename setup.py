@@ -9,7 +9,7 @@ setup(
     packages=['ong_utils'],
     url='www.neirapinuela.es',
     license='',
-    author='ongpi',
+    author='Oscar Neira',
     author_email='oneirag@yahoo.es',
     description='Common utilities for python projects',
     install_requires=required,
