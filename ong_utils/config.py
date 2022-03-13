@@ -1,12 +1,14 @@
 import logging
 import logging.config
 import os
+import getpass
 
 import ujson
 import yaml
-
+import keyring
 
 _missing = object()  # In order to use None as default value for function args, this value must be used
+
 
 class OngConfig:
     extensions_cfg = {
@@ -89,7 +91,7 @@ class OngConfig:
     def logger(self):
         return self.__logger
 
-    def config(self, item, default_value=_missing):
+    def config(self, item: str, default_value=_missing):
         """Checks for a parameter in the configuration, and raises exception if not found.
         If not found but a non-None default_value is used, then default value is returned and no Exception raised"""
         if item in self.__app_cfg:
@@ -98,6 +100,24 @@ class OngConfig:
             return default_value
         else:
             raise ValueError(f"Item {item} not defined in {self.config_filename}")
+
+    def get_password(self, service_cfg_key: str, username_cfg_key: str):
+        """
+        Returns a password stored in the keyring for the provided service and username config keys
+        :param service_cfg_key: the key of the config item storing the service name (retrieved by calling self.config)
+        :param username_cfg_key: the key of the config item storing the username (retrieved by calling self.config)
+        :return: the password (None if not set)
+        """
+        return keyring.get_password(self.config(service_cfg_key), self.config(username_cfg_key))
+
+    def set_password(self, service_cfg_key: str, username_cfg_key: str) -> None:
+        """
+        Prompts user for a password to be stored in the keyring for the provided service and username config keys
+        :param service_cfg_key: the key of the config item storing the service name (retrieved by calling self.config)
+        :param username_cfg_key: the key of the config item storing the username (retrieved by calling self.config)
+        :return: None
+        """
+        return keyring.set_password(self.config(service_cfg_key), self.config(username_cfg_key), getpass.getpass())
 
     def add_app_config(self, item: str, value):
         """Adds a new value to app_config and stores it. Raises value error if item already existed"""

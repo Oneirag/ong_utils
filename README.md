@@ -1,6 +1,6 @@
 # Ong_Utils
 Simple package with some utils to import in any project:
-* Class to manage configuration files in yaml or json 
+* Class to manage configuration files in yaml or json. It also uses `keyring` to store and retrieve passwords 
 * logger and a timer to record elapsed times for optimizing some processes 
 * a create_pool_manager function to create instances of urllib3.PoolManager with retries and timeouts and checking of 
 https connections 
@@ -66,6 +66,23 @@ project_name2:
 and config method can only access to configuration of current project.
 
 New values can be added to the configuration in execution time by calling `add_app_config`. That will persist the new values in the configuration file.
+### Passwords
+Module uses keyring to store passwords
+```python
+from ong_utils import OngConfig
+# configuration file should have "service" and "user" keys
+_cfg = OngConfig("mypackage")
+config = _cfg.config
+get_password = _cfg.get_password
+set_password = _cfg.set_password
+
+# Sets password (prompts user)
+set_password("service", "user")
+# Equivalent to keyring.set_password(config("service"), config("user"), input())
+# Gets password
+pwd = get_password("service", "user")
+# Equivalent to keyring.get_password(config("service"), config("user"))
+```
 
 ## Timers
 `OngTimer` class uses `tic(msg)` to start timer and `toc(msg)` to stop timer and show a message with the elapsed time.
