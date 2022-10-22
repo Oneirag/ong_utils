@@ -94,12 +94,14 @@ Example Usage:
     from ong_utils import OngTimer
     from time import sleep
 
-    #############################################################################
-    # Standard use (defining an instance and using tic, toc and toc_loop methods)
-    #############################################################################
+    #########################################################################################################
+    # Standard use (defining an instance and using tic, toc and toc_loop methods, changing decimal places)
+    #########################################################################################################
     tic = OngTimer()  # if used OngTimer(False), all prints would be disabled
+    more_precise_tic = OngTimer(decimal_places=6)     # Use decimals parameter to increase decimals (defaults to 3)
 
     tic.tic("Starting")
+    more_precise_tic.tic("Starting (6 decimals)")
     for i in range(10):
         tic.tic("Without loop")
         sleep(0.15)
@@ -113,6 +115,7 @@ Example Usage:
     sleep(1)
     tic.print_loop("Loop")  # Forces print In any case it would be printed in destruction of tic instance
     tic.toc("Starting")  # Will print total time of the whole loop
+    more_precise_tic.toc("Starting (6 decimals)")  # Will print total time with 6 decimals
 
     ########################################################################################
     # Using toc/toc_loop with a non previously defined msg will raise a ValueError Exception
@@ -145,6 +148,35 @@ Example Usage:
     logging.basicConfig(level=logging.DEBUG)
     with OngTimer(msg="Using a logger", logger=logging, log_level=logging.DEBUG):
         sleep(0.2)
+
+    ##############################################################
+    # When a timer is deleted, any tic without toc will be printed
+    ##############################################################
+    forgoten_toc_timer = OngTimer()             # This timer will have tics without corresponding toc
+    standard_timer = OngTimer(decimals=6)
+    forgoten_toc_timer_disabled = OngTimer(enabled=False)
+    forgoten_toc_timer.tic("forgotten timer1")
+    forgoten_toc_timer.tic("forgotten timer2")
+    standard_timer.tic("unforgotten timer")
+    forgoten_toc_timer_disabled.tic("forgotten disabled timer")
+    sleep(0.1)
+    standard_timer.toc("unforgotten timer")
+    del forgoten_toc_timer   # Will print elapsed time, as are pending tocs
+    del standard_timer   # Prints nothing (as there is not pending tic)
+    del forgoten_toc_timer_disabled     # Prints nothing (is disabled)
+
+    #####################################################
+    # Use .msgs property to iterate over all named timers
+    #####################################################
+    loop_timer = OngTimer()
+    for _ in range(10):
+        loop_timer.tic("hello1")
+        loop_timer.tic("hello2")
+        sleep(0.1)
+        loop_timer.toc_loop("hello1")
+        loop_timer.toc_loop("hello2")
+    for msg in loop_timer.msgs:
+        loop_timer.print_loop(msg)
 
 ```
 ## Urllib3 utils
