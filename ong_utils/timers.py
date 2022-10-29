@@ -48,9 +48,11 @@ class _OngTic:
         if self.total_t > 60:
             # It more than 60 seconds, format time
             print_msg += "({})".format(format_hours_min_seconds(self.total_t, decimal_places=self.decimal_places))
-        print(print_msg)
+        # If there is a logger, print just to the logger and don't use print
         if self.logger:
             self.logger.log(self.log_level, print_msg)
+        else:
+            print(print_msg)
         self.is_loop = False  # To prevent further prints
 
     def __del__(self):
