@@ -1,11 +1,11 @@
+import getpass
 import logging
 import logging.config
 import os
-import getpass
 
+import keyring
 import ujson
 import yaml
-import keyring
 
 _missing = object()  # In order to use None as default value for function args, this value must be used
 

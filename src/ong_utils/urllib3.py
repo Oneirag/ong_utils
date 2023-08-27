@@ -11,10 +11,11 @@ headers.update(cookies2header(cookies))
 req.http.request("get", url, headers=headers)       # Using cookies from previous response
 """
 
-import certifi
-import urllib3.contrib.pyopenssl
 from http.cookiejar import CookieJar
 from urllib.request import Request
+
+import certifi
+import urllib3.contrib.pyopenssl
 
 
 def create_pool_manager(status=10, backoff_factor=0.15, **kwargs) -> urllib3.PoolManager:

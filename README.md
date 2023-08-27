@@ -195,3 +195,81 @@ headers = {"Accept": "text/html;application/json"}
 headers.update(cookies2header(cookies))
 req.http.request("get", url, headers=headers)       # Using cookies from previous response
 ```
+
+## Make shortcuts for entry points
+
+You can create desktop shortcuts for each entry point in the script to easily launch them in your system.
+
+**NOTE**: for the shortcut to work, each entry point defined in e.g. `script_file` of package `package` must be
+executable with `python -m package.script_file`
+
+There are two ways to create shortcuts:
+
+* **Create shortcuts when installing with pip:** valid when installing from git (e.g. pip install
+  git+https://github.com/someone/somerepo.git). Uses a custom postinstall
+  script that creates the desktop launcher and modifies the wheel file (so they can be uninstalled) after building the
+  wheel file from sources.
+* **Create a new entry point and run it manually after install:** valid for any other case. Create a entry_point
+  e.g. `install` and call it manually after installation. That scritp will create the shortcut(s) and add it/them to
+  the `RECORD`file so the shortcut will be latter uninstalled
+
+### Create the shortcut when installing with PIP
+
+Create a `setup.py` in your root directory and add the following code:
+
+```python
+from setuptools import setup
+from ong_utils.desktop_shortcut import PipCreateShortcut
+
+setup(cmdclass={'bdist_wheel': PipCreateShortcut})
+
+```
+
+In your `pyproject.toml` add the following:
+
+```toml
+[build-system]
+requires = [
+    "setuptools",
+    "ong_utils @ git+https://github.com/Oneirag/ong_utils"
+]
+[project.scripts]
+script1 = "package.file:function"
+```
+
+Then the program will install the wheel from pip and create a desktop shortcut for script1.
+
+### Create a manual script
+
+Provided that you have the following entry point in your `pyproject.toml`:
+
+```toml
+[project.scripts]
+script1 = "mypackage.myscript:myfunction"
+```
+
+You'll have to create a script in your code. Let's call it `install.py` with the following content:
+
+```python
+from ong_utils.desktop_shortcut import ShortCutInstaller
+
+
+def main():
+    sci = ShortCutInstaller("mypackage")
+    ### Add as many lines as scripts you want to create shortcuts for
+    sci.make_shortcut("script1")
+```
+
+Then manually add it to the entry points of your `pyproject.toml`
+
+```toml
+[project.scripts]
+script1 = "mypackage.myscript:myfunction"
+install_desktop = "mymodule.install:main"
+```
+
+Then just ask the user to run `install_desktop` after `pip install mypackage`
+
+**NOTE**: optionally, you can add icons to the shorcut, if added to the package.icons folder with png format or icns
+format (for mac)
+provided that the icons have the same name as the entry_point.

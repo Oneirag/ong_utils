@@ -1,9 +1,9 @@
 """
 Timer object for measuring elapsed time elapsed in some processes
 """
-from time import time
 import logging
 from datetime import timedelta
+from time import time
 
 
 def format_hours_min_seconds(total_seconds: float, decimal_places=3) -> str:
