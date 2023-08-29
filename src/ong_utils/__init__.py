@@ -12,9 +12,37 @@ where extension can be yaml, yml, json or js
 Path can be overridden either with ONG_CONFIG_PATH environ variable
 """
 
+import importlib
 
-from ong_utils.config import OngConfig
-from ong_utils.timers import OngTimer
-from ong_utils.urllib3 import create_pool_manager, cookies2header, get_cookies
-from ong_utils.utils import LOCAL_TZ, is_debugging
+__lazy_imports = {
+    'OngConfig': 'ong_utils.config',
+    'OngTimer': 'ong_utils.timers',
+    'create_pool_manager': 'ong_utils.urllib3',
+    'cookies2header': 'ong_utils.urllib3',
+    'get_cookies': 'ong_utils.urllib3',
+    'LOCAL_TZ': 'ong_utils.utils',
+    'is_debugging': 'ong_utils.utils'
+}
 
+__all__ = list(__lazy_imports.keys())
+__all__ = ['OngConfig',
+           'OngTimer',
+           'create_pool_manager',
+           'cookies2header',
+           'get_cookies',
+           'LOCAL_TZ',
+           'is_debugging'
+           ]
+
+
+def __getattr__(name):
+    """Implements lazy loading"""
+    if name in __all__:
+        return getattr(importlib.import_module(__lazy_imports[name], __name__), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+#
+# from ong_utils.config import OngConfig
+# from ong_utils.timers import OngTimer
+# from ong_utils.urllib3 import create_pool_manager, cookies2header, get_cookies
+# from ong_utils.utils import LOCAL_TZ, is_debugging

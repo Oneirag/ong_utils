@@ -23,6 +23,30 @@ def is_pip() -> bool:
         return False
 
 
+def get_name_script(entry_points) -> list:
+    """
+    Takes a distribution object and returns a list of tuples for each entry point with the script name and the
+    module to be executed
+    Example: for "script1 = package.file:function" [("script1", "package.file")]
+    :param entry_points: the list of entry points (result of  self.distribution.entry_points)
+    :return:
+    """
+    retval = []
+
+    def script_to_shortcut(script):
+        script = script.split(":")[0]
+        return f"_ -m {script}"
+
+    if isinstance(entry_points, dict):
+        for console_script in entry_points.get("console_scripts", []):
+            name, script = map(str.strip, console_script.split("="))
+            retval.append((name, script_to_shortcut(script)))
+    else:
+        for ep in entry_points:
+            retval.append((ep.name, script_to_shortcut(ep.value)))
+    return retval
+
+
 class PipCreateShortcut(bdist_wheel):
     """
     Creates shortcuts for each entry_point when installing the package from git using pip
@@ -30,9 +54,16 @@ class PipCreateShortcut(bdist_wheel):
 
     def run(self):
         bdist_wheel.run(self)
+        if not is_pip():
+            # If not running under pip, do nothing, as results could be strange
+            return
         impl_tag, abi_tag, plat_tag = self.get_tag()
         archive_basename = f"{self.wheel_dist_name}-{impl_tag}-{abi_tag}-{plat_tag}"
         wheel_path = os.path.join(self.dist_dir, archive_basename + ".whl")
+        ####
+        # Create a new wheel, by unzipping the original files but the RECORD file, that will be modified with the new
+        # shortcut files, in order to be uninstalled later
+        ####
         tmpfd, tmpname = tempfile.mkstemp(dir=os.path.dirname(wheel_path))
         os.close(tmpfd)
         # create a temp copy of the archive without filename
@@ -54,30 +85,18 @@ class PipCreateShortcut(bdist_wheel):
     def append_scut_record(self) -> str:
         """Creates a shortcut for every entry point"""
         retval = ""
-        eps = list(ep for ep in self.distribution.entry_points)
-        for ep in eps:
-            files = list(f for f in ep.dist.files if f.match(ep.name))
-            # TODO: test if this script works in windows
-            script = os.path.normpath(files[0].locate().as_posix())
-            # splits = eps[0].value.split(':')
-            # module = splits[0]
-            # function = splits[1] if len(splits) > 1 else None
-            # if not function:
-            #     script = f"_ -m {module}"
-            # else:
-            #     This DOES NOT WORK at least in mac, no matter if using " or '
-            #     script = f'_ -c "from {module} import {function};{function}()"'
+        for name, script in get_name_script(self.distribution.entry_points):
             iconfile = 'shovel.icns' if platform.startswith('darwin') else 'shovel.ico'
-            name = ep.name
-            scut = shortcut(script=script, name=name, userfolders=get_folders())
-            scut_filename = os.path.join(scut.desktop_dir, scut.target)
             # Not needed: shortcuts are not overwritten using make_shortcut
+            # scut = shortcut(script=script, name=name, userfolders=get_folders())
             # if os.path.exists(scut_filename):
             #     os.remove(scut_filename)
             scut = make_shortcut(script=script, name=name, icon=None,
-                                 description="Lanzador de la interfaz del punteo de cuentas",
+                                 description="",
                                  startmenu=False)
-            retval += "\n".join(file2record(scut_filename))
+            scut_filename = os.path.join(scut.desktop_dir, scut.target)
+            for record in file2record(scut_filename):
+                retval += f"{record}\n"
         return retval
 
 
@@ -86,7 +105,6 @@ def file2record(filename: str) -> list:
     if os.path.isfile(filename):
         with open(filename, "r") as f:
             contents = f.read()
-
         sha256 = base64.urlsafe_b64encode(hashlib.sha256(contents.encode()).digest())[:-1]
         txt_append_record_file = f"{filename},sha256={sha256},{len(contents)}"
         return [txt_append_record_file]
@@ -97,9 +115,10 @@ def file2record(filename: str) -> list:
         raise FileNotFoundError(f"Not found file: {filename}")
 
 
-class ShortCutInstaller:
-    def __init__(self, library: str):
+class PostInstallCreateShortcut:
+    def __init__(self, library: str = __name__):
         self.library = library
+        print(f"Creating shortcuts for {library}")
         try:
             self.distribution = distribution(self.library)
         except importlib.metadata.PackageNotFoundError as pnfe:
@@ -130,47 +149,35 @@ class ShortCutInstaller:
                     if line not in record_data:
                         f.writelines([line])
 
-    def make_shortcut(self, entry_point: str):
-        """It just can run the given code if it is a module (runs if __name__ == '__main__' part"""
-        eps = list(ep for ep in self.distribution.entry_points if ep.name == entry_point)
-        if eps:
-            files = list(f for f in eps[0].dist.files if f.match(eps[0].name))
+    def make_shortcuts(self):
+        for name, script in get_name_script(self.distribution.entry_points):
+            # files = list(f for f in entry_point.dist.files)
             # TODO: test if this script works in windows
-            script = os.path.normpath(files[0].locate().as_posix())
+            # script = os.path.normpath(files[0].locate().as_posix())
             # splits = eps[0].value.split(':')
             # module = splits[0]
             # function = splits[1] if len(splits) > 1 else None
             # if not function:
-            #     script = f"_ -m {module}"
             # else:
             #     This DOES NOT WORK at least in mac, no matter if using " or '
             #     script = f'_ -c "from {module} import {function};{function}()"'
-        else:
-            script = f"_ -m {entry_point}"
-        iconfile = 'shovel.icns' if platform.startswith('darwin') else 'shovel.ico'
-        # script = '_ -m liquidaciones.conciliation_gui'
-        # script = entry_point
+            iconfile = 'shovel.icns' if platform.startswith('darwin') else 'shovel.ico'
 
-        name = 'Punteo de cuentas'
-        scut = shortcut(script=script, name=name, userfolders=get_folders())
-        scut_filename = os.path.join(scut.desktop_dir, scut.target)
-        # Not needed: shortcuts are not overwritten using make_shortcut
-        # if os.path.exists(scut_filename):
-        #     os.remove(scut_filename)
-        retva = make_shortcut(script=script, name=name, icon=None,
-                              description="Lanzador de la interfaz del punteo de cuentas",
-                              startmenu=False)
+            scut = shortcut(script=script, name=name, userfolders=get_folders())
+            scut_filename = os.path.join(scut.desktop_dir, scut.target)
+            # Not needed: shortcuts are not overwritten using make_shortcut
+            # if os.path.exists(scut_filename):
+            #     os.remove(scut_filename)
+            retva = make_shortcut(script=script, name=name, icon=None,
+                                  description="",
+                                  startmenu=False)
 
-        self.add_file_record(retva)
+            self.add_file_record(retva)
 
 
 if __name__ == '__main__':
-    # try:
-    #     sci = ShortCutInstaller("ong_gesfincas222")
-    # except Exception as e:
-    #     print(f"CORRECT: exception found {e}")
-    sci = ShortCutInstaller("ong_gesfincas")
-    sci.make_shortcut("punteo")
+    sci = PostInstallCreateShortcut()
+    sci.make_shortcuts()
 
 """
 flat couch vector, minimalist, in style of SKSKS app icon

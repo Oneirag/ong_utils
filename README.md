@@ -231,6 +231,7 @@ In your `pyproject.toml` add the following:
 [build-system]
 requires = [
     "setuptools",
+  "wheel",
     "ong_utils @ git+https://github.com/Oneirag/ong_utils"
 ]
 [project.scripts]
