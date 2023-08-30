@@ -5,6 +5,7 @@ and modifies its installed files (in dist-info), so it can be uninstalled
 import base64
 import hashlib
 import importlib.metadata
+import inspect
 import os
 import tempfile
 import zipfile
@@ -35,15 +36,25 @@ def get_name_script(entry_points) -> list:
 
     def script_to_shortcut(script):
         script = script.split(":")[0]
-        return f"_ -m {script}"
+        # check that script is not the one currently executing
+        stack = inspect.stack()
+        script_os = script.replace(".", os.sep)
+        if not any(script_os in s.filename for s in stack):
+            return f"_ -m {script}"
+        else:
+            return None
 
     if isinstance(entry_points, dict):
         for console_script in entry_points.get("console_scripts", []):
             name, script = map(str.strip, console_script.split("="))
-            retval.append((name, script_to_shortcut(script)))
+            script = script_to_shortcut(script)
+            if script:
+                retval.append((name, script))
     else:
         for ep in entry_points:
-            retval.append((ep.name, script_to_shortcut(ep.value)))
+            script = script_to_shortcut(ep.value)
+            if script:
+                retval.append((ep.name, script))
     return retval
 
 
@@ -118,9 +129,9 @@ def file2record(filename: str) -> list:
 class PostInstallCreateShortcut:
     def __init__(self, library: str = __name__):
         self.library = library
-        print(f"Creating shortcuts for {library}")
         try:
             self.distribution = distribution(self.library)
+            print(f"Creating shortcuts for {library} installed in {self.distribution._path}")
         except importlib.metadata.PackageNotFoundError as pnfe:
             pnfe.args = (f"{library}. Is it installed?",)
             raise pnfe
@@ -129,25 +140,35 @@ class PostInstallCreateShortcut:
         records = list(f for f in self.distribution.files if f.name == "RECORD")
         if records:
             self.record = records[0].locate()
+            self.installed_files = None
         else:
+            # Add to installed files of the egg_file
+            egg_dir = self.distribution._path.as_posix()
+            assert (egg_dir.endswith("egg-info"))
+            self.installed_files = os.path.join(egg_dir, "installed_files.txt")
             self.record = None
 
     def add_file_record(self, shortcut: pyshortcuts.Shortcut):
         """Adds information on a shortcut to the RECORD file (if exists)"""
         append_to_record_file = []
-        if self.record is not None:
-            filename = shortcut.target
-            path = shortcut.desktop_dir
-            # path = shortcut.startmenu_dir # In case it was created in start menu
-            sc_path = os.path.join(path, filename)
-            append2record = file2record(sc_path)
-            with open(self.record, "r") as f:
+        output_file = self.record or self.installed_files
+        filename = shortcut.target
+        path = shortcut.desktop_dir
+        # path = shortcut.startmenu_dir # In case it was created in start menu
+        sc_path = os.path.join(path, filename)
+        append2record = file2record(sc_path)
+        if os.path.exists(output_file):
+            with open(output_file, "r") as f:
                 record_data = f.readlines()
-            with open(self.record, "a") as f:
-                # avoid writing multiple times in record file
-                for line in append2record:
-                    if line not in record_data:
-                        f.writelines([line])
+        else:
+            record_data = ""
+        with open(output_file, "a") as f:
+            # avoid writing multiple times in record file
+            for line in append2record:
+                if output_file == self.installed_files:
+                    line = line.split(",")[0]
+                if line not in record_data:
+                    f.writelines([line])
 
     def make_shortcuts(self):
         for name, script in get_name_script(self.distribution.entry_points):
@@ -165,9 +186,8 @@ class PostInstallCreateShortcut:
 
             scut = shortcut(script=script, name=name, userfolders=get_folders())
             scut_filename = os.path.join(scut.desktop_dir, scut.target)
-            # Not needed: shortcuts are not overwritten using make_shortcut
-            # if os.path.exists(scut_filename):
-            #     os.remove(scut_filename)
+            if os.path.exists(scut_filename):
+                continue  # If shortcut existed, skip
             retva = make_shortcut(script=script, name=name, icon=None,
                                   description="",
                                   startmenu=False)
