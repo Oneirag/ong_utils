@@ -274,6 +274,6 @@ pip install mypackage
 python -m mypackage.post_install
 ```
 
-**NOTE**: optionally, you can add icons to the shorcut with png format or icns
+**NOTE**: optionally, you can add icons to the shorcut with png, ico or icns
 format (for mac), provided that the icons have the same name as the entry_point. The program will use the first icon
-that matches the name of the entry point.
+that matches the name of the entry point. In case of png format, the desired size would be **128x128**
