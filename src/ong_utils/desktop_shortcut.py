@@ -117,7 +117,7 @@ def file2record(filename: str) -> list:
     if os.path.isfile(filename):
         with open(filename, "rb") as f:
             contents = f.read()
-        sha256 = base64.urlsafe_b64encode(hashlib.sha256(contents).digest())[:-1]
+        sha256 = base64.urlsafe_b64encode(hashlib.sha256(contents).digest())[:-1].decode("utf-8")
         txt_append_record_file = f"{filename},sha256={sha256},{len(contents)}"
         return [txt_append_record_file]
     elif os.path.isdir(filename):
@@ -173,7 +173,7 @@ class PostInstallCreateShortcut:
                     if output_file == self.installed_files:
                         line = line.split(",")[0]
                     if line not in record_data:
-                        f.writelines([line])
+                        f.write(line + "\n")
 
     def find_icon(self, script_name) -> str | None:
         """Finds an icon for the given file. If found in png format, then transformed to ico/icns format.
