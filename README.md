@@ -209,9 +209,10 @@ There are two ways to create shortcuts:
   git+https://github.com/someone/somerepo.git). Uses a custom postinstall
   script that creates the desktop launcher and modifies the wheel file (so they can be uninstalled) after building the
   wheel file from sources.
-* **Create a new entry point and run it manually after install:** valid for any other case. Create a entry_point
-  e.g. `install` and call it manually after installation. That scritp will create the shortcut(s) and add it/them to
-  the `RECORD`file so the shortcut will be latter uninstalled
+* **Create a script and run it manually after install:** valid for any other case. Create a entry_point
+  e.g. `post_install` and call it manually after installation. That scritp will create the shortcut(s) and add it/them
+  to
+  the `RECORD`file so the shortcut will be later uninstalled
 
 ### Create the shortcut when installing with PIP
 
@@ -249,28 +250,28 @@ Provided that you have the following entry point in your `pyproject.toml`:
 script1 = "mypackage.myscript:myfunction"
 ```
 
-You'll have to create a script in your code. Let's call it `install.py` with the following content:
+You'll have to create a script in your code. Let's call it `post_install.py` with the following content:
 
 ```python
-from ong_utils.desktop_shortcut import ShortCutInstaller
+from ong_utils.desktop_shortcut import PostInstallCreateShortcut
 
 
 def main():
-    sci = ShortCutInstaller("mypackage")
-    ### Add as many lines as scripts you want to create shortcuts for
-    sci.make_shortcut("script1")
+  PostInstallCreateShortcut("your_library_name").make_shortcuts()
+
+
+if __name__ == '__main__':
+  main()
 ```
 
-Then manually add it to the entry points of your `pyproject.toml`
+Assuming that `post_install.py` script is in the `mypackage` folder, then you have to ask the user to run it manually
+after installation:
 
-```toml
-[project.scripts]
-script1 = "mypackage.myscript:myfunction"
-install_desktop = "mymodule.install:main"
+```bash
+pip install mypackage
+python -m mypackage.post_install
 ```
 
-Then just ask the user to run `install_desktop` after `pip install mypackage`
-
-**NOTE**: optionally, you can add icons to the shorcut, if added to the package.icons folder with png format or icns
-format (for mac)
-provided that the icons have the same name as the entry_point.
+**NOTE**: optionally, you can add icons to the shorcut with png format or icns
+format (for mac), provided that the icons have the same name as the entry_point. The program will use the first icon
+that matches the name of the entry point.

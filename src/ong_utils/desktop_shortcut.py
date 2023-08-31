@@ -149,26 +149,30 @@ class PostInstallCreateShortcut:
             self.record = None
 
     def add_file_record(self, shortcut: pyshortcuts.Shortcut):
-        """Adds information on a shortcut to the RECORD file (if exists)"""
+        """Adds information on a shortcut to the RECORD file (if exists), including icon"""
         append_to_record_file = []
         output_file = self.record or self.installed_files
         filename = shortcut.target
         path = shortcut.desktop_dir
         # path = shortcut.startmenu_dir # In case it was created in start menu
         sc_path = os.path.join(path, filename)
-        append2record = file2record(sc_path)
-        if os.path.exists(output_file):
-            with open(output_file, "r") as f:
-                record_data = f.readlines()
-        else:
-            record_data = ""
-        with open(output_file, "a") as f:
-            # avoid writing multiple times in record file
-            for line in append2record:
-                if output_file == self.installed_files:
-                    line = line.split(",")[0]
-                if line not in record_data:
-                    f.writelines([line])
+        icon_path = shortcut.icon if not "pyshorcuts" in shortcut.icon else ""
+        for file in (sc_path, icon_path):
+            if not file:
+                continue
+            append2record = file2record(file)
+            if os.path.exists(output_file):
+                with open(output_file, "r") as f:
+                    record_data = f.readlines()
+            else:
+                record_data = ""
+            with open(output_file, "a") as f:
+                # avoid writing multiple times in record file
+                for line in append2record:
+                    if output_file == self.installed_files:
+                        line = line.split(",")[0]
+                    if line not in record_data:
+                        f.writelines([line])
 
     def make_shortcuts(self):
         for name, script in get_name_script(self.distribution.entry_points):
@@ -182,13 +186,20 @@ class PostInstallCreateShortcut:
             # else:
             #     This DOES NOT WORK at least in mac, no matter if using " or '
             #     script = f'_ -c "from {module} import {function};{function}()"'
-            iconfile = 'shovel.icns' if platform.startswith('darwin') else 'shovel.ico'
-
-            scut = shortcut(script=script, name=name, userfolders=get_folders())
+            iconfile_ext = '.icns' if platform.startswith('darwin') else '.ico'
+            # Try to find icon in "icons" folder
+            icon = name + iconfile_ext
+            iconfile = list(f for f in self.distribution.files if f.name.endswith(icon))
+            if not iconfile:
+                iconfile = None
+            else:
+                iconfile = iconfile[0].locate()
+            scut = shortcut(script=script, name=name, userfolders=get_folders(), icon=iconfile)
             scut_filename = os.path.join(scut.desktop_dir, scut.target)
-            if os.path.exists(scut_filename):
-                continue  # If shortcut existed, skip
-            retva = make_shortcut(script=script, name=name, icon=None,
+            # In order to add icons once installed, overwrite the shorcut anyway
+            # if os.path.exists(scut_filename):
+            #     continue  # If shortcut existed, skip
+            retva = make_shortcut(script=script, name=name, icon=iconfile,
                                   description="",
                                   startmenu=False)
 
