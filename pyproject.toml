@@ -1,0 +1,38 @@
+[project]
+name = "ong_utils"
+version = "0.3.0"
+# license = {file = "LICENSE.txt"}
+authors = [
+    { email = "oneirag@yahoo.es", name = "Oscar Neira" }
+]
+readme = "readme.md"
+requires-python = ">=3.8"
+description = "Common utilities for python projects"
+
+dependencies = [
+    "certifi",
+    "urllib3",
+    "pyopenssl",
+    "python-dateutil",
+    "pyyaml",
+    "ujson",
+    "idna",
+    "keyring", # for storing passwords
+    "pyshortcuts", # For creating desktop links to launch programs
+    "Pillow; sys_platform != 'darwin'",       # For managing ico files
+    "icnsutil; sys_platform == 'darwin'"      # For managing icns files
+]
+
+[tool.setuptools.packages.find]
+# scanning for namespace packages is true by default in pyproject.toml, so
+# you do NOT need to include the following line.
+namespaces = true
+where = ["src"]
+
+[project.urls]  # Optional
+"Homepage" = "https://github.com/Oneirag/ong_utils"
+"Source" = "https://github.com/Oneirag/ong_utils"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

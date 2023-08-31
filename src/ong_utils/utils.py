@@ -1,5 +1,6 @@
-import dateutil.tz
 import sys
+
+import dateutil.tz
 
 LOCAL_TZ = dateutil.tz.tzlocal()
 
