@@ -10,7 +10,6 @@ requires-python = ">=3.8"
 description = "Common utilities for python projects"
 
 dependencies = [
-
     "certifi",
     "urllib3",
     "pyopenssl",
@@ -19,7 +18,9 @@ dependencies = [
     "ujson",
     "idna",
     "keyring", # for storing passwords
-    "pyshortcuts" # For creating desktop links to launch programs
+    "pyshortcuts", # For creating desktop links to launch programs
+    "Pillow; sys_platform != 'darwin'",       # For managing ico files
+    "icnsutil; sys_platform == 'darwin'"      # For managing icns files
 ]
 
 [tool.setuptools.packages.find]

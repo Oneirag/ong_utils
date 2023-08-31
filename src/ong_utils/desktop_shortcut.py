@@ -7,6 +7,7 @@ import hashlib
 import importlib.metadata
 import inspect
 import os
+import sys
 import tempfile
 import zipfile
 from importlib.metadata import distribution
@@ -114,9 +115,9 @@ class PipCreateShortcut(bdist_wheel):
 def file2record(filename: str) -> list:
     """Returns a list of lines to append to RECORD file associated to a given a file"""
     if os.path.isfile(filename):
-        with open(filename, "r") as f:
+        with open(filename, "rb") as f:
             contents = f.read()
-        sha256 = base64.urlsafe_b64encode(hashlib.sha256(contents.encode()).digest())[:-1]
+        sha256 = base64.urlsafe_b64encode(hashlib.sha256(contents).digest())[:-1]
         txt_append_record_file = f"{filename},sha256={sha256},{len(contents)}"
         return [txt_append_record_file]
     elif os.path.isdir(filename):
@@ -174,6 +175,37 @@ class PostInstallCreateShortcut:
                     if line not in record_data:
                         f.writelines([line])
 
+    def find_icon(self, script_name) -> str | None:
+        """Finds an icon for the given file. If found in png format, then transformed to ico/icns format.
+        Returns None if not found"""
+
+        iconfile_ext = '.icns' if platform.startswith('darwin') else '.ico'
+        # Try to find icon in "icons" folder
+        icon = script_name + iconfile_ext
+        iconfile = list(f for f in self.distribution.files if f.name.endswith(icon))
+        if not iconfile:
+            # Try to find icon in png format
+            png_file = list(f for f in self.distribution.files if f.name.endswith(script_name + ".png"))
+            if not png_file:
+                iconfile = None
+            else:
+                png_file = png_file[0].locate().as_posix()
+                iconfile = png_file[:-4] + iconfile_ext
+                # Create the ad hoc ico/icns file
+                if sys.platform == "darwin":
+                    import icnsutil
+                    img = icnsutil.IcnsFile()
+                    img.add_media('ic07', file=png_file)
+                    img.write(iconfile)
+                else:
+                    from PIL import Image
+                    img = Image.open(png_file)
+                    img.save(iconfile)
+                pass
+        else:
+            iconfile = iconfile[0].locate().as_posix()
+        return iconfile
+
     def make_shortcuts(self):
         for name, script in get_name_script(self.distribution.entry_points):
             # files = list(f for f in entry_point.dist.files)
@@ -186,14 +218,7 @@ class PostInstallCreateShortcut:
             # else:
             #     This DOES NOT WORK at least in mac, no matter if using " or '
             #     script = f'_ -c "from {module} import {function};{function}()"'
-            iconfile_ext = '.icns' if platform.startswith('darwin') else '.ico'
-            # Try to find icon in "icons" folder
-            icon = name + iconfile_ext
-            iconfile = list(f for f in self.distribution.files if f.name.endswith(icon))
-            if not iconfile:
-                iconfile = None
-            else:
-                iconfile = iconfile[0].locate()
+            iconfile = self.find_icon(name)
             scut = shortcut(script=script, name=name, userfolders=get_folders(), icon=iconfile)
             scut_filename = os.path.join(scut.desktop_dir, scut.target)
             # In order to add icons once installed, overwrite the shorcut anyway

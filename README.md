@@ -257,11 +257,11 @@ from ong_utils.desktop_shortcut import PostInstallCreateShortcut
 
 
 def main():
-  PostInstallCreateShortcut("your_library_name").make_shortcuts()
+    PostInstallCreateShortcut("your_library_name").make_shortcuts()
 
 
 if __name__ == '__main__':
-  main()
+    main()
 ```
 
 Assuming that `post_install.py` script is in the `mypackage` folder, then you have to ask the user to run it manually
