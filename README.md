@@ -6,9 +6,11 @@ Simple package with some utils to import in any project:
 https connections 
 * a TZ_LOCAL variable with the local timezone
 of the computer).   
-* a is_debugging function that returns True when debugging code
-* a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3
-* a get_cookies function to extract a dict of cookies from a response of a urllib3 request
+* an `is_debugging` function that returns True when debugging code
+* a `cookies2header` that converts cookies in dict to header field 'Cookie' for use in urllib3
+* a `get_cookies` function to extract a dict of cookies from a response of a urllib3 request
+* a `find_available_port` function to find the first available port for running a flask server (incrementing by one from a 
+given one until a free is found)
 
 
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
@@ -272,9 +274,9 @@ pip install mypackage
 python -m mypackage.post_install
 ```
 
-**NOTE**: optionally, you can add icons to the shorcut with png format or icns
+**NOTE**: optionally, you can add icons to the shorcut with png, ico or icns
 format (for mac), provided that the icons have the same name as the entry_point. The program will use the first icon
-that matches the name of the entry point.
+that matches the name of the entry point. In case of png format, the desired size would be **128x128**
 
 # Nicer output pandas DataFrame to Excel
 You can export a pandas DataFrame to Excel nicely formated (converted to an Excel Table, with autofilter enabled and columns widths autofitted)

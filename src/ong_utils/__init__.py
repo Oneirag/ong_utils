@@ -21,7 +21,8 @@ __lazy_imports = {
     'cookies2header': 'ong_utils.urllib3',
     'get_cookies': 'ong_utils.urllib3',
     'LOCAL_TZ': 'ong_utils.utils',
-    'is_debugging': 'ong_utils.utils'
+    'is_debugging': 'ong_utils.utils',
+    'find_available_port': 'ong_utils.web'
 }
 
 __all__ = list(__lazy_imports.keys())
@@ -31,7 +32,8 @@ __all__ = ['OngConfig',
            'cookies2header',
            'get_cookies',
            'LOCAL_TZ',
-           'is_debugging'
+           'is_debugging',
+           'find_available_port'
            ]
 
 
