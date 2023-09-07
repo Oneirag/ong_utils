@@ -1,6 +1,6 @@
 [project]
 name = "ong_utils"
-version = "0.3.0"
+version = "0.4.0"
 # license = {file = "LICENSE.txt"}
 authors = [
     { email = "oneirag@yahoo.es", name = "Oscar Neira" }
@@ -20,7 +20,8 @@ dependencies = [
     "keyring", # for storing passwords
     "pyshortcuts", # For creating desktop links to launch programs
     "Pillow; sys_platform != 'darwin'",       # For managing ico files
-    "icnsutil; sys_platform == 'darwin'"      # For managing icns files
+    "icnsutil; sys_platform == 'darwin'",      # For managing icns files
+    "openpyxl",         # For managing excel files
 ]
 
 [tool.setuptools.packages.find]

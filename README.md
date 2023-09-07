@@ -275,3 +275,15 @@ python -m mypackage.post_install
 **NOTE**: optionally, you can add icons to the shorcut with png format or icns
 format (for mac), provided that the icons have the same name as the entry_point. The program will use the first icon
 that matches the name of the entry point.
+
+# Nicer output pandas DataFrame to Excel
+You can export a pandas DataFrame to Excel nicely formated (converted to an Excel Table, with autofilter enabled and columns widths autofitted)
+
+Example:
+```python
+import pandas as pd
+from ong_utils.excel import df_to_excel
+
+with pd.ExcelWriter(filename) as writer:
+    df_to_excel(df, writer, sheet_name)
+```
