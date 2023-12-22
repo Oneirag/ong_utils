@@ -287,7 +287,3 @@ from ong_utils.excel import df_to_excel
 with pd.ExcelWriter(filename) as writer:
     df_to_excel(df, writer, sheet_name)
 ```
-## Internal storage
-Uses keyring to store not only passwords, but any other thing (cookies, jwt tokens...)
-
-See tests for sample usage
