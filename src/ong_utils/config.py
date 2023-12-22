@@ -104,11 +104,13 @@ class OngConfig:
     def get_password(self, service_cfg_key: str, username_cfg_key: str):
         """
         Returns a password stored in the keyring for the provided service and username config keys
-        :param service_cfg_key: the key of the config item storing the service name (retrieved by calling self.config)
-        :param username_cfg_key: the key of the config item storing the username (retrieved by calling self.config)
+        :param service_cfg_key: the key of the config item storing the service name, to be retrieved by calling self.config.
+        if not found in config, defaults to service_cfg_key
+        :param username_cfg_key: the key of the config item storing the username, to be retrieved by calling self.config)
         :return: the password (None if not set)
         """
-        return keyring.get_password(self.config(service_cfg_key), self.config(username_cfg_key))
+        return keyring.get_password(self.config(service_cfg_key, service_cfg_key),
+                                    self.config(username_cfg_key, username_cfg_key))
 
     def set_password(self, service_cfg_key: str, username_cfg_key: str) -> None:
         """
@@ -117,7 +119,8 @@ class OngConfig:
         :param username_cfg_key: the key of the config item storing the username (retrieved by calling self.config)
         :return: None
         """
-        return keyring.set_password(self.config(service_cfg_key), self.config(username_cfg_key), getpass.getpass())
+        return keyring.set_password(self.config(service_cfg_key, service_cfg_key),
+                                    self.config(username_cfg_key, username_cfg_key), getpass.getpass())
 
     def add_app_config(self, item: str, value):
         """Adds a new value to app_config and stores it. Raises value error if item already existed"""
