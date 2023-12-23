@@ -1,5 +1,4 @@
 import unittest
-import time
 
 from ong_utils.internal_storage import InternalStorage
 
@@ -42,7 +41,6 @@ class TestInternalStorage(unittest.TestCase):
     def iter_test_values(self):
         """Iterates through all test values creating separated tests"""
         for value in self.store_values:
-            self.internal_storage.store_value(self.store_key, value)
             with self.subTest(value=value):
                 yield value
                 pass
@@ -53,10 +51,12 @@ class TestInternalStorage(unittest.TestCase):
             serialized = self.internal_storage.serialize(value)
             recovered = self.internal_storage.deserialize(serialized)
             self.assertEqual(value, recovered)
+            self.assertLess(len(serialized), 1025, "Too long data")
 
     def test_store_values(self):
         """Tests that values can be stored and read from storage without changing"""
         for value in self.iter_test_values():
+            self.internal_storage.store_value(self.store_key, value)
             expected = self.internal_storage.serialize(value)
             self.assertEqual(expected, self.internal_storage.get_value_raw(self.store_key))
             stored = self.internal_storage.get_value(self.store_key)

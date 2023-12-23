@@ -2,11 +2,35 @@
 Class to permanently store data using keyring
 """
 import os
-import urllib.parse
 import keyring
 import keyring.errors
-import pickle
-import gzip
+import zlib
+import base64
+import json
+
+def compress_string(input_string):
+    # Convert the string to bytes
+    input_bytes = input_string.encode('utf-8')
+
+    # Compress the bytes using zlib
+    compressed_bytes = zlib.compress(input_bytes)
+
+    # Encode the compressed bytes in base64 to get a UTF-8 encoded string
+    compressed_string = base64.b64encode(compressed_bytes).decode('utf-8')
+
+    return compressed_string
+
+def decompress_string(compressed_string):
+    # Decode the UTF-8 encoded string into bytes
+    compressed_bytes = base64.b64decode(compressed_string.encode('utf-8'))
+
+    # Decompress the bytes using zlib
+    decompressed_bytes = zlib.decompress(compressed_bytes)
+
+    # Decode the decompressed bytes back to a string
+    decompressed_string = decompressed_bytes.decode('utf-8')
+
+    return decompressed_string
 
 
 class InternalStorage:
@@ -23,22 +47,11 @@ class InternalStorage:
     def app_name(self) -> str:
         return self.__app_name
 
-    @property
-    def encoding(self) -> str:
-        return "iso-8859-1"
-
     def serialize(self, value) -> str:
-        value_pickle = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
-        zipped = gzip.compress(value_pickle)
-        # return zipped.decode(self.encoding)
-        value = urllib.parse.quote(zipped.decode(self.encoding))
-        return value
+        return compress_string(json.dumps(value))
 
     def deserialize(self, value: str):
-        value = urllib.parse.unquote(value).encode(self.encoding)
-        unzipped = gzip.decompress(value)
-        unpickled = pickle.loads(unzipped)
-        return unpickled
+        return json.loads(decompress_string(value))
 
     def store_value(self, key: str, value):
         """Stores something in keyring"""
