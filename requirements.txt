@@ -1,4 +1,4 @@
-pip_system_certs                    # Not needed for this package but helpful for avoiding https errors in windows
+pip_system_certs                       # Not needed for this package but helpful for avoiding https errors in windows
 certifi
 urllib3
 pyopenssl
@@ -11,3 +11,4 @@ pyshortcuts                             # For creating desktop links to launch p
 Pillow; sys_platform != 'darwin'        # For managing ico files
 icnsutil; sys_platform == 'darwin'      # For managing icns files
 openpyxl                                # For managing excel files
+pyjwt                                   # For decoding jwt tokens

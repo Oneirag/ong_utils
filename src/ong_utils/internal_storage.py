@@ -1,14 +1,15 @@
 """
 Class to permanently store data using keyring
 """
-import os
 import keyring
 import keyring.errors
 import zlib
 import base64
 import json
 
-def compress_string(input_string):
+
+def compress_string(input_string: str) -> str:
+    """Compresses a string into another string utf-8 encoded"""
     # Convert the string to bytes
     input_bytes = input_string.encode('utf-8')
 
@@ -20,7 +21,10 @@ def compress_string(input_string):
 
     return compressed_string
 
-def decompress_string(compressed_string):
+
+def decompress_string(compressed_string: str) -> str:
+    """Decompresses a utf-8 encoded string into another string utf-8 encoded"""
+
     # Decode the UTF-8 encoded string into bytes
     compressed_bytes = base64.b64decode(compressed_string.encode('utf-8'))
 
@@ -36,21 +40,18 @@ def decompress_string(compressed_string):
 class InternalStorage:
 
     def __init__(self, app_name: str):
-        self.__username = os.getenv("USER", os.getenv("USERNAME"))
         self.__app_name = app_name
-
-    @property
-    def username(self) -> str:
-        return self.__username
 
     @property
     def app_name(self) -> str:
         return self.__app_name
 
     def serialize(self, value) -> str:
+        """Serializes and compresses an object into a string."""
         return compress_string(json.dumps(value))
 
     def deserialize(self, value: str):
+        """Deserializes and decompresses a string into is original value"""
         return json.loads(decompress_string(value))
 
     def store_value(self, key: str, value):

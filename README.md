@@ -9,7 +9,8 @@ of the computer).
 * a is_debugging function that returns True when debugging code
 * a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3
 * a get_cookies function to extract a dict of cookies from a response of a urllib3 request
-
+* Utilities to decode access tokens
+* Utilities to store any data into keyring (e.g. strings, dicts...)
 
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
 ```python
@@ -80,6 +81,23 @@ set_password("service", "user")
 # Gets password
 pwd = get_password("service", "user")
 # Equivalent to keyring.get_password(config("service"), config("user"))
+```
+#### Storing arbitrary data in keyring 
+For storing long passwords (e.g. a jwt_token) or non string data (e.g. a dictionary of cookies), use `ong_utils.internal_storage.InternalStorage` class.
+```python
+from ong_utils.internal_storage import InternalStorage
+
+internal_storage = InternalStorage("your app name")
+for value to store in [
+        "long string" * 120,
+        {"an": "example", "of": "dictionary"}
+        ]:
+  key_name = "sample_key"
+  internal_storage.store_value(key_name, value)
+  stored = internal_storage.get_value("key name")
+  assert value == stored
+  internal_storage.remove_stored_value()
+
 ```
 
 ## Timers
@@ -287,3 +305,10 @@ from ong_utils.excel import df_to_excel
 with pd.ExcelWriter(filename) as writer:
     df_to_excel(df, writer, sheet_name)
 ```
+
+## Decoding jwt tokens
+
+Use `ong_utils.jwt_tokens.decode_jwt_token` to decode a jwt token into a dict. 
+
+Use `ong_utils.jwt_tokens.decode_jwt_token_expiry` to decode a jwt token into a dict. 
+
