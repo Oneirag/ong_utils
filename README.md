@@ -93,7 +93,8 @@ set_password("service", "user")
 pwd = get_password("service", "user")
 # Equivalent to keyring.get_password(config("service"), config("user"))
 ```
-## Storing arbitrary data in keyring 
+## Storing long data in keyring 
+### Storing json-serializable data
 For storing long passwords (e.g. a jwt_token) or non string data (e.g. a dictionary of cookies), use `ong_utils.InternalStorage` class.
 ```python
 from ong_utils import InternalStorage
@@ -109,6 +110,26 @@ for value to store in [
   assert value == stored
   internal_storage.remove_stored_value()
 
+```
+### Storing cookies from requests.session objects
+`CookieJar` objects are not json serializable. To store cookies you'll have to turn into list of dicts. 
+
+Use functions in `requests.cookies` package to make conversions before storing/retrieving them as dicts
+
+```python
+# Assume session is a request.session.Session object
+cookies = session.cookies
+cookie_dict = [dict(name=c.name, value=c.value, domain=c.domain, path=c.path, expires=c.expires)
+               for c in cookies]
+# Store cookie_dict normally
+
+# Code for updating session from cookie_dict
+import requests.cookies
+
+# Assume cookie_dict is the same as above
+cookies = [requests.cookies.create_cookie(**c) for c in cookies_dict]
+for cookie in cookies:
+    session.cookies.set_cookie(cookie)
 ```
 
 ## Timers
