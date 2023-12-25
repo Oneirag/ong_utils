@@ -1,4 +1,5 @@
 # Ong_Utils
+## Description
 Simple package with some utils to import in any project:
 * Class to manage configuration files in yaml or json. It also uses `keyring` to store and retrieve passwords 
 * logger and a timer to record elapsed times for optimizing some processes 
@@ -9,9 +10,19 @@ of the computer).
 * a is_debugging function that returns True when debugging code
 * a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3
 * a get_cookies function to extract a dict of cookies from a response of a urllib3 request
-* Utilities to decode access tokens
-* Utilities to store any data into keyring (e.g. strings, dicts...)
+* a class to store any data into keyring (e.g. strings, dicts...)
 
+### Optional dependencies
+Installing `pip install ong_utils[shortcuts]`:
+* functions to create desktop shortcuts for packages installed with pip
+
+Installing `pip install ong_utils[xlsx]`:
+* function to export a pandas dataframe into a xlsx excel sheet 
+
+Installing `pip install ong_utils[jwt]`:
+* functions to decode access tokens 
+
+## General usage
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
 ```python
 import pandas as pd
@@ -82,10 +93,10 @@ set_password("service", "user")
 pwd = get_password("service", "user")
 # Equivalent to keyring.get_password(config("service"), config("user"))
 ```
-#### Storing arbitrary data in keyring 
-For storing long passwords (e.g. a jwt_token) or non string data (e.g. a dictionary of cookies), use `ong_utils.internal_storage.InternalStorage` class.
+## Storing arbitrary data in keyring 
+For storing long passwords (e.g. a jwt_token) or non string data (e.g. a dictionary of cookies), use `ong_utils.InternalStorage` class.
 ```python
-from ong_utils.internal_storage import InternalStorage
+from ong_utils import InternalStorage
 
 internal_storage = InternalStorage("your app name")
 for value to store in [
@@ -218,6 +229,8 @@ req.http.request("get", url, headers=headers)       # Using cookies from previou
 
 You can create desktop shortcuts for each entry point in the script to easily launch them in your system.
 
+You have to install optional dependency `pip install ong_utils[shortcuts]`
+
 **NOTE**: for the shortcut to work, each entry point defined in e.g. `script_file` of package `package` must be
 executable with `python -m package.script_file`
 
@@ -250,8 +263,8 @@ In your `pyproject.toml` add the following:
 [build-system]
 requires = [
     "setuptools",
-  "wheel",
-    "ong_utils @ git+https://github.com/Oneirag/ong_utils"
+    "wheel",
+    "ong_utils[shortcuts]"
 ]
 [project.scripts]
 script1 = "package.file:function"
@@ -294,7 +307,7 @@ python -m mypackage.post_install
 format (for mac), provided that the icons have the same name as the entry_point. The program will use the first icon
 that matches the name of the entry point.
 
-# Nicer output pandas DataFrame to Excel
+## Nicer output pandas DataFrame to Excel
 You can export a pandas DataFrame to Excel nicely formated (converted to an Excel Table, with autofilter enabled and columns widths autofitted)
 
 Example:
@@ -307,8 +320,9 @@ with pd.ExcelWriter(filename) as writer:
 ```
 
 ## Decoding jwt tokens
+Needs install extra packages with `pip install ong_utils[jwt]`
 
-Use `ong_utils.jwt_tokens.decode_jwt_token` to decode a jwt token into a dict. 
+Use `ong_utils.decode_jwt_token` to decode a jwt token into a dict. 
 
-Use `ong_utils.jwt_tokens.decode_jwt_token_expiry` to decode a jwt token into a dict. 
+Use `ong_utils.decode_jwt_token_expiry` to decode expiration as a datetime object. 
 

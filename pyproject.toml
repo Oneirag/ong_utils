@@ -5,7 +5,7 @@ version = "0.4.1"
 authors = [
     { email = "oneirag@yahoo.es", name = "Oscar Neira" }
 ]
-readme = "readme.md"
+readme = "README.md"
 requires-python = ">=3.8"
 description = "Common utilities for python projects"
 
@@ -13,20 +13,20 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
-dependencies = [
-    "certifi",
-    "urllib3",
-    "pyopenssl",
-    "python-dateutil",
-    "pyyaml",
-    "ujson",
-    "idna",
-    "keyring", # for storing passwords
-    "pyshortcuts", # For creating desktop links to launch programs
-    "Pillow; sys_platform != 'darwin'",       # For managing ico files
-    "icnsutil; sys_platform == 'darwin'",      # For managing icns files
-    "openpyxl",         # For managing excel files
+[project.optional-dependencies]
+jwt = [
+    "pyjwt"
 ]
+shortcuts =[
+    "pyshortcuts",
+    "Pillow; sys_platform != 'darwin'",
+    "icnsutil; sys_platform == 'darwin'",
+    "wheel",
+]
+xlsx = [
+    "openpyxl"
+]
+
 
 [tool.setuptools.packages.find]
 # scanning for namespace packages is true by default in pyproject.toml, so
