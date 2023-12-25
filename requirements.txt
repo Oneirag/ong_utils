@@ -1,0 +1,17 @@
+pip_system_certs                       # Not needed for this package but helpful for avoiding https errors in windows
+certifi
+urllib3
+pyopenssl
+python-dateutil
+pyyaml
+ujson
+idna
+keyring                                 # for storing passwords (or whatever!)
+# Dependencies for [shorcuts]
+# pyshortcuts                             # For creating desktop links to launch programs
+# Pillow; sys_platform != 'darwin'        # For managing ico files
+# icnsutil; sys_platform == 'darwin'      # For managing icns files
+# Dependencies for [xlsx]
+# openpyxl                                # For managing excel files
+# Dependencies for [jwt]
+# pyjwt                                   # For decoding jwt tokens
