@@ -313,7 +313,7 @@ You can export a pandas DataFrame to Excel nicely formated (converted to an Exce
 Example:
 ```python
 import pandas as pd
-from ong_utils.excel import df_to_excel
+from ong_utils import df_to_excel
 
 with pd.ExcelWriter(filename) as writer:
     df_to_excel(df, writer, sheet_name)

@@ -15,8 +15,6 @@ Path can be overridden either with ONG_CONFIG_PATH environ variable
 import importlib
 from dataclasses import dataclass
 
-from ong_utils.jwt_tokens import decode_jwt_token, decode_jwt_token_expiry
-
 
 @dataclass
 class ImportConfig:
@@ -35,20 +33,25 @@ __lazy_imports = {
     'is_debugging': ImportConfig('ong_utils.utils'),
     'find_available_port': ImportConfig('ong_utils.web'),
     'InternalStorage': ImportConfig('ong_utils.internal_storage'),
+    'df_to_excel': ImportConfig('ong_utils.excel', pip_install_extras="[xlsx]"),
     'decode_jwt_token': ImportConfig('ong_utils.jwt_tokens', pip_install_extras="[jwt]"),
     'decode_jwt_token_expiry': ImportConfig('ong_utils.jwt_tokens', pip_install_extras="[jwt]"),
 }
 
-__all__ = list(__lazy_imports.keys())
-# __all__ = ['OngConfig',
-#            'OngTimer',
-#            'create_pool_manager',
-#            'cookies2header',
-#            'get_cookies',
-#            'LOCAL_TZ',
-#            'is_debugging',
-#            'find_available_port'
-#            ]
+# __all__ = list(__lazy_imports.keys())
+__all__ = ['OngConfig',
+           'OngTimer',
+           'create_pool_manager',
+           'cookies2header',
+           'get_cookies',
+           'LOCAL_TZ',
+           'is_debugging',
+           'find_available_port',
+           'InternalStorage',
+           'decode_jwt_token',
+           'decode_jwt_token_expiry',
+           "df_to_excel",
+           ]
 
 
 def __getattr__(name):
