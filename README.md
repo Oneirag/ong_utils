@@ -1,26 +1,32 @@
-# Ong_Utils
+Ong_Utils
+=========
+
 ## Description
 Simple package with some utils to import in any project:
-* Class to manage configuration files in yaml or json. It also uses `keyring` to store and retrieve passwords 
-* logger and a timer to record elapsed times for optimizing some processes 
+* class to manage configuration files in yaml or json [Read more](#configuration-files). It also uses `keyring` to store and retrieve passwords. [Read more](#passwords)  
+* logger and a timer to record elapsed times for optimizing some processes. [Read more](#timers)
 * a create_pool_manager function to create instances of urllib3.PoolManager with retries and timeouts and checking of 
-https connections 
+https connections. [Read more](#urllib3-utils)
 * a TZ_LOCAL variable with the local timezone
 of the computer).   
 * a is_debugging function that returns True when debugging code
-* a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3
-* a get_cookies function to extract a dict of cookies from a response of a urllib3 request
-* a class to store any data into keyring (e.g. strings, dicts...)
+* a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3. [Read more](#urllib3-utils)
+* a get_cookies function to extract a dict of cookies from a response of a urllib3 request. [Read more](#urllib3-utils)
+* a class to store any data into keyring (e.g. strings, dicts...). [Read more](#storing-long-data-in-keyring)
+* functions to parse html pages and extract javascript variables (such as CSRF tokens or links). [Read more](#parsing-html-pages)
 
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
-* functions to create desktop shortcuts for packages installed with pip
+* functions to create desktop shortcuts for packages installed with pip. [Read more](#make-shortcuts-for-entry-points)
 
 Installing `pip install ong_utils[xlsx]`:
-* function to export a pandas dataframe into a xlsx excel sheet 
+* function to export a pandas dataframe into a xlsx excel sheet.[Read more](#nicer-output-pandas-dataframe-to-excel) 
 
 Installing `pip install ong_utils[jwt]`:
-* functions to decode access tokens 
+* functions to decode access tokens. [Read more](#decoding-jwt-tokens)
+
+Installing `pip install ong_utils[selenium]`:
+* class to manage Chrome using selenium. [Read more](#control-webpages-with-selenium)
 
 ## General usage
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
@@ -93,7 +99,7 @@ set_password("service", "user")
 pwd = get_password("service", "user")
 # Equivalent to keyring.get_password(config("service"), config("user"))
 ```
-## Storing long data in keyring 
+## Storing long data in keyring
 ### Storing json-serializable data
 For storing long passwords (e.g. a jwt_token) or non string data (e.g. a dictionary of cookies), use `ong_utils.InternalStorage` class.
 ```python
@@ -347,3 +353,51 @@ Use `ong_utils.decode_jwt_token` to decode a jwt token into a dict.
 
 Use `ong_utils.decode_jwt_token_expiry` to decode expiration as a datetime object. 
 
+## Parsing html pages
+To extract simple values without the need for BeautifulSoup, you can use `find_js_variable`
+
+```python
+from ong_utils import find_js_variable
+source = """
+Imagine this is a website
+var_name1="value1"
+var_name2={"key1":"value2"}
+"""
+find_js_variable(source, 'var_name1')       # returns "value1"
+find_js_variable(source, "var_name", ":")   # returns "value2"
+```
+
+## Control webpages with selenium
+Install `ong_utils[selenium]` to control websites with selenium
+
+```python
+from ong_utils import Chrome
+
+# Use it as a context manager
+with Chrome(block_pages="https://www.marca.com") as chrome:
+    driver = chrome.get_driver()
+    driver.get("https://www.google.com")
+    driver.implicitly_wait(5)
+    driver.get("https://www.marca.com")
+    driver.implicitly_wait(5)
+
+# Or close driver explicitly
+chrome = Chrome()
+driver = chrome.get_driver()
+driver.get("www.someserver.com")
+chrome.quit_driver()
+
+###############################
+# Wait for a cookie in a request
+###############################
+driver = chrome.wait_for_cookie("someserver.com", "somecookie", timeout_headless=10, timeout=60)
+if driver:
+  cookies = driver.get_cookies()
+  
+###############################
+# Wait for a certain request
+###############################
+req = chrome.wait_for_request("someserver.com", "someserver.com/api/interesting_endpoint", timeout_headless=10, timeout=60)
+if req:
+    auth = req.headers['Authorization'].split(" ")[-1]
+```

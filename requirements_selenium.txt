@@ -1,0 +1,3 @@
+selenium                    # Base library
+selenium-wire               # For wait until headers/cookies
+undetected-chromedriver     # For avoid detection
