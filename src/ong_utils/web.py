@@ -1,3 +1,6 @@
+"""
+General functions to deal with web servers
+"""
 import socket
 
 
@@ -21,3 +24,5 @@ def find_available_port(initial_port: int = 5000, end_port: int = 9999, logger=N
                         print(info_msg)
                 return port
     raise ConnectionRefusedError(f"No available ports in range from {initial_port} to {end_port}")
+
+
