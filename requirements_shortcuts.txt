@@ -1,0 +1,4 @@
+pyshortcuts
+Pillow; sys_platform != 'darwin'
+icnsutil; sys_platform == 'darwin'
+wheel

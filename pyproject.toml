@@ -1,6 +1,6 @@
 [project]
 name = "ong_utils"
-version = "0.5.0"
+version = "0.5.1"
 # license = {file = "LICENSE.txt"}
 authors = [
     { email = "oneirag@yahoo.es", name = "Oscar Neira" }
@@ -9,24 +9,13 @@ readme = "README.md"
 requires-python = ">=3.8"
 description = "Common utilities for python projects"
 
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "optional-dependencies"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
-
-[project.optional-dependencies]
-jwt = [
-    "pyjwt"
-]
-shortcuts =[
-    "pyshortcuts",
-    "Pillow; sys_platform != 'darwin'",
-    "icnsutil; sys_platform == 'darwin'",
-    "wheel",
-]
-xlsx = [
-    "openpyxl"
-]
-selenium = {file = ["requirements_selenium.txt"]}
+optional-dependencies.jwt = {file = ["requirements_jwt.txt"]}
+optional-dependencies.shortcuts = {file = ["requirements_shortcuts.txt"]}
+optional-dependencies.xlsx = {file = ["requirements_xlsx.txt"]}
+optional-dependencies.selenium = {file = ["requirements_selenium.txt"]}
 
 
 [tool.setuptools.packages.find]
