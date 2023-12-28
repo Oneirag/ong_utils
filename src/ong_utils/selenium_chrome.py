@@ -2,6 +2,8 @@
 Controls Chrome web browser
 Needs to download webdriver for Chrome from https://sites.google.com/chromium.org/driver/
 """
+from __future__ import annotations
+
 import logging
 import platform
 
@@ -9,6 +11,7 @@ import selenium.common.exceptions
 from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
+import seleniumwire.undetected_chromedriver as uc
 
 
 class Chrome:
@@ -25,8 +28,6 @@ class Chrome:
         """
         self.logger = logger
         self.undetected = undetected
-        if self.undetected:
-            import seleniumwire.undetected_chromedriver as uc
         self.driver_path = driver_path
         self.profile_path = profile_path
         self.__driver = None
@@ -67,7 +68,10 @@ class Chrome:
         if self.logger:
             self.logger.debug(f"Initializing driver with options: {options}")
         try:
-            self.__driver = webdriver.Chrome(options=options)
+            if self.undetected:
+                self.__driver = uc.Chrome(options=options)
+            else:
+                self.__driver = webdriver.Chrome(options=options)
         except selenium.common.exceptions.SessionNotCreatedException:
             if platform.system() == "Darwin":   # is macos
                 cmd = "sudo killall Google\ Chrome"
@@ -78,12 +82,14 @@ class Chrome:
         return self.__driver
 
     def __iterate__driver(self, url: str, timeout: int, timeout_headless: int):
-        """Opens a url twice, first headless and later interactive"""
+        """Opens an url twice, first headless and later interactive. If url is empty does not open it and reuses
+        current driver"""
         for to, headless in (timeout_headless, True), (timeout, False):
             if to:
                 if self.logger:
                     self.logger.debug(f"Opening {headless=} {url=}")
-                self.get_driver(headless=headless).get(url)
+                if url:
+                    self.get_driver(headless=headless).get(url)
                 yield to
 
     def wait_for_cookie(self, url: str, cookie_name: str, timeout: int, timeout_headless: int = 0):
@@ -106,15 +112,33 @@ class Chrome:
                 pass
         return None
 
-    def wait_for_request(self, url: str, request_url: str, timeout: int, timeout_headless: int = 0):
+    def wait_for_auth_token(self, url: str | None, request_url: str, timeout: int, timeout_headless: int = 0) \
+            -> str | None:
         """
-        Opens and url and waits for a request to a certain url. Returns request if found or None otherwise
+        Opens and url and waits for a request to a certain url, returning auth header token (returns XXX in a header
+        Authorization: Bearer XXX) and None if not found
         Attempts twice: first headless (if timeout_headless is greater than 0) and then interactive
-        :param url: url to open
+        :param url: url to open. If None, current driver is used (so no headless option is available)
         :param request_url: request url waiting for
         :param timeout_headless: seconds to wait for cookie in headless mode
         :param timeout: seconds to wait for cookie
-        :return: driver instance or None if could not get cookie
+        :return: authorization token or None
+        """
+        req = self.wait_for_request(url, request_url, timeout, timeout_headless)
+        if req is not None:
+            token = req.headers['Authorization'].split(" ")[-1]
+            return token
+        return None
+
+    def wait_for_request(self, url: str | None, request_url: str, timeout: int, timeout_headless: int = 0):
+        """
+        Opens and url and waits for a request to a certain url. Returns request if found or None otherwise
+        Attempts twice: first headless (if timeout_headless is greater than 0) and then interactive
+        :param url: url to open. If None, current driver is used (so no headless option is available)
+        :param request_url: request url waiting for
+        :param timeout_headless: seconds to wait for cookie in headless mode
+        :param timeout: seconds to wait for cookie
+        :return: driver instance or None if program could not get cookie
         """
         for to in self.__iterate__driver(url, timeout_headless=timeout_headless, timeout=timeout):
             try:
@@ -147,6 +171,7 @@ class Chrome:
 
 
 if __name__ == '__main__':
+    from ong_utils import Chrome
     with Chrome(block_pages="https://www.marca.com") as chrome:
         driver = chrome.get_driver()
         driver.get("https://www.google.com")

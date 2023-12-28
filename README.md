@@ -56,6 +56,11 @@ my_project:
   sample_key2: sample_value2
 log:
   optional_log_config: values
+# This is an optional section, for values used just in tests
+my_project_test:
+  sample_key1: sample_value1
+  sample_key2: sample_value2
+
 ```
 or this
 ```json
@@ -77,6 +82,9 @@ can share the same config file. E.g. if config file is /etc/myconfig.yaml, ti ca
 project_name1:
   key_for_project1: value
 project_name2:
+  key_for_project2: value
+# Optional: test values for project_name2
+project_name2_test:
   key_for_project2: value
 ```
 and config method can only access to configuration of current project.
@@ -400,4 +408,8 @@ if driver:
 req = chrome.wait_for_request("someserver.com", "someserver.com/api/interesting_endpoint", timeout_headless=10, timeout=60)
 if req:
     auth = req.headers['Authorization'].split(" ")[-1]
+# or the same shorter...
+token = chrome.wait_for_auth_token("someserver.com", "someserver.com/api/interesting_endpoint", timeout_headless=10, timeout=60)
+if token:
+    do_stuff_here()
 ```

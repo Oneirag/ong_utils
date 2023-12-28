@@ -1,6 +1,8 @@
 """
 Functions to find simple elements in websites, without the need for BeautifulSoup
 """
+from __future__ import annotations
+
 import re
 
 

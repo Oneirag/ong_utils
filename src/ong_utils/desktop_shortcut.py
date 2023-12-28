@@ -2,6 +2,8 @@
 Creates a desktop link to launch a certain program,
 and modifies its installed files (in dist-info), so it can be uninstalled
 """
+from __future__ import annotations
+
 import base64
 import hashlib
 import importlib.metadata
