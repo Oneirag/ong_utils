@@ -30,10 +30,12 @@ class OngConfig:
         :param default_log_cfg: a dict with a default logging configuration (logDict format)
         """
         self.project_name = project_name
+        self.test_project_name = f"{self.project_name}_test"
         self.__app_cfg = default_app_cfg or dict()
         self.__log_cfg = default_log_cfg or _default_logger_config(app_name=project_name)
         self.config_path = os.path.expanduser(os.environ.get("ONG_CONFIG_PATH",
                                                              os.path.join("~", ".config", "ongpi")))
+        self.__test_cfg = dict()
         self.config_filename = None
         for ext, (loader, _) in self.extensions_cfg.items():
             if cfg_filename:
@@ -48,7 +50,8 @@ class OngConfig:
                 with open(self.config_filename, "r") as f_cfg:
                     cfg = loader(f_cfg)
                 if project_name in cfg:
-                    self.__app_cfg.update(cfg[project_name])
+                    self.__app_cfg.update(cfg[self.project_name])
+                    self.__test_cfg.update(cfg.get(self.test_project_name) or dict())
                     self.__log_cfg.update(cfg.get("log") or dict())
                     self._fix_logger_config()
                     logging.config.dictConfig(self.__log_cfg)
@@ -99,7 +102,18 @@ class OngConfig:
         elif default_value is not _missing:
             return default_value
         else:
-            raise ValueError(f"Item {item} not defined in {self.config_filename}")
+            raise ValueError(f"Item {item} not defined in section {self.project_name} of file {self.config_filename}")
+
+    def config_test(self, item: str, default_value=_missing):
+        """Checks for a parameter in the configuration in the test section, and raises exception if not found.
+        If not found but a non-None default_value is used, then default value is returned and no Exception raised"""
+        if item in self.__test_cfg:
+            return self.__test_cfg[item]
+        elif default_value is not _missing:
+            return default_value
+        else:
+            raise ValueError(f"Item {item} not defined in section {self.test_project_name} "
+                             f"of file {self.config_filename}")
 
     def get_password(self, service_cfg_key: str, username_cfg_key: str):
         """
