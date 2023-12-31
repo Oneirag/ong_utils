@@ -45,12 +45,15 @@ class Chrome:
         elif any(request.url.startswith(blocked) for blocked in self.__block_pages):
             request.abort()
 
-    def get_driver(self, headless: bool = False):
+    def get_driver(self, headless: bool = False, reuse_last: bool=False):
         """
         Starts chrome and returns driver instance
         :param headless: True to run in headless mode. Defaults to False
+        :param reuse_last: True to return last opened driver (if any), False (default) to create a new one
         :return: a chrome driver
         """
+        if reuse_last and self.__driver is not None:
+            return self.__driver
         self.quit_driver()     # Close previous driver instances
         if self.undetected:
             options = uc.ChromeOptions()
@@ -99,19 +102,22 @@ class Chrome:
                     self.get_driver(headless=headless).get(url)
                 yield to
 
-    def wait_for_cookie(self, url: str, cookie_name: str, timeout: int, timeout_headless: int = 0):
+    def wait_for_cookie(self, url: str, cookie_name: str | list, timeout: int, timeout_headless: int = 0):
         """
         Opens and url and waits for a certain cookie. Returns driver if cookie found or None otherwise
         Attempts twice: first headless (if timeout_headless is greater than 0) and then interactive
         :param url: url to open
-        :param cookie_name: cookie name for waiting for
+        :param cookie_name: cookie name (or list of cookies) for waiting for. If it is a list, stops when one of
+        them is detected
         :param timeout_headless: seconds to wait for cookie in headless mode
         :param timeout: seconds to wait for cookie
         :return: driver instance or None if could not get cookie
         """
+        if isinstance(cookie_name, str):
+            cookie_name = [cookie_name]
         for to in self.__iterate__driver(url, timeout_headless=timeout_headless, timeout=timeout):
             try:
-                WebDriverWait(self.__driver, timeout=to).until(lambda d: d.get_cookie(cookie_name))
+                WebDriverWait(self.__driver, timeout=to).until(lambda d: any(d.get_cookie(c) for c in cookie_name))
                 if self.logger:
                     self.logger.info(f"Cookie {cookie_name} found in {url}")
                 return self.__driver

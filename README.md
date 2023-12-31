@@ -5,13 +5,14 @@ Ong_Utils
 Simple package with some utils to import in any project:
 * class to manage configuration files in yaml or json [Read more](#configuration-files). It also uses `keyring` to store and retrieve passwords. [Read more](#passwords)  
 * logger and a timer to record elapsed times for optimizing some processes. [Read more](#timers)
-* a create_pool_manager function to create instances of urllib3.PoolManager with retries and timeouts and checking of 
+* a `create_pool_manager` function to create instances of urllib3.PoolManager with retries and timeouts and checking of 
 https connections. [Read more](#urllib3-utils)
-* a TZ_LOCAL variable with the local timezone
+* a `TZ_LOCAL` variable with the local timezone
 of the computer).   
-* a is_debugging function that returns True when debugging code
-* a cookies2header that converts cookies in dict to header field 'Cookie' for use in urllib3. [Read more](#urllib3-utils)
-* a get_cookies function to extract a dict of cookies from a response of a urllib3 request. [Read more](#urllib3-utils)
+* an `is_debugging` function that returns True when debugging code
+* a `to_list` function to convert any non-list value (specifically strings to avoid iterating char by char) into a list
+* a `cookies2header` that converts cookies in dict to header field 'Cookie' for use in urllib3. [Read more](#urllib3-utils)
+* a `get_cookies` function to extract a dict of cookies from a response of a urllib3 request. [Read more](#urllib3-utils)
 * a class to store any data into keyring (e.g. strings, dicts...). [Read more](#storing-long-data-in-keyring)
 * functions to parse html pages and extract javascript variables (such as CSRF tokens or links). [Read more](#parsing-html-pages)
 
