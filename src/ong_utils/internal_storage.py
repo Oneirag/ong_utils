@@ -6,6 +6,8 @@ import keyring.errors
 import zlib
 import base64
 import json
+from textwrap import wrap
+
 
 
 def compress_string(input_string: str) -> str:
@@ -36,8 +38,14 @@ def decompress_string(compressed_string: str) -> str:
 
     return decompressed_string
 
+class InternalStorageV0:
 
-class InternalStorage:
+    @property
+    def version(self):
+        return 0
+
+    def make_header(self, chunks: int = 0) -> dict:
+        return dict(version=self.version, class_name=self.__class__.__name__, chunks=chunks)
 
     def __init__(self, app_name: str):
         self.__app_name = app_name
@@ -78,6 +86,19 @@ class InternalStorage:
             keyring.delete_password(self.app_name, key)
         except keyring.errors.PasswordDeleteError:
             pass
+
+class InternalStorage(InternalStorageV0):
+
+    chunk_size = 1000
+
+    @property
+    def version(self):
+        return 1
+
+    def chunk(self, store_value: str) -> list:
+        """Splits a string into parts of a maximum size"""
+        return wrap(store_value, self.chunk_size)
+
 
 
 if __name__ == '__main__':

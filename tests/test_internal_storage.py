@@ -22,11 +22,11 @@ class TestInternalStorage(unittest.TestCase):
         1222322434132343241345541434567876543,
         # Sample JWT token
         jwt_token * 4,
-        # Quite long string
-        (
+        # Quite long string, it must be a list, not a tuple
+        [
             [dict(name=get_random_string(10), value=get_random_string(256)) for _ in range(10)],
             get_random_string(500)
-        ),
+        ],
     ]
     store_key = "key_to_delete"
 
@@ -41,9 +41,11 @@ class TestInternalStorage(unittest.TestCase):
     def tearDown(self):
         self.internal_storage.remove_stored_value(self.store_key)
 
-    def iter_test_values(self):
+    def iter_test_values(self, target_idx=None):
         """Iterates through all test values creating separated tests"""
-        for value in self.store_values:
+        for idx, value in enumerate(self.store_values):
+            if target_idx is not None and idx != target_idx:
+                continue
             with self.subTest(value=value):
                 yield value
                 pass

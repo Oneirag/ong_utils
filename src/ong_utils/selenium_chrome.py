@@ -72,10 +72,17 @@ class Chrome:
                 self.__driver = uc.Chrome(options=options)
             else:
                 self.__driver = webdriver.Chrome(options=options)
-        except selenium.common.exceptions.SessionNotCreatedException:
+        except selenium.common.exceptions.SessionNotCreatedException as snce:
             if platform.system() == "Darwin":   # is macos
                 cmd = "sudo killall Google\ Chrome"
                 print(f"Could not create session. Try executing '{cmd}'")
+            raise
+        except selenium.common.exceptions.NoSuchDriverException as nsde:
+            error_msg = "Chrome not found. Download driver from 'https://chromedriver.chromium.org/downloads'"
+            if self.logger:
+                self.logger.error(error_msg)
+            else:
+                print(error_msg)
             raise
         if self.__block_pages:
             self.__driver.request_interceptor = self.interceptor
@@ -178,5 +185,4 @@ if __name__ == '__main__':
         driver.implicitly_wait(5)
         driver.get("https://www.marca.com")
         driver.implicitly_wait(5)
-
 
