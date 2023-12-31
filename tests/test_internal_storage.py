@@ -2,7 +2,7 @@ import unittest
 import random
 import string
 
-from ong_utils.internal_storage import InternalStorage
+from ong_utils.internal_storage import InternalStorage, InternalStorageV0
 from tests import jwt_token
 
 
@@ -37,6 +37,7 @@ class TestInternalStorage(unittest.TestCase):
     def setUp(self):
         self.internal_storage = InternalStorage(self.app_name)
         self.internal_storage.remove_stored_value(self.store_key)
+        self.old_internal_storage = InternalStorageV0(self.app_name)
 
     def tearDown(self):
         self.internal_storage.remove_stored_value(self.store_key)
@@ -74,6 +75,49 @@ class TestInternalStorage(unittest.TestCase):
             self.internal_storage.remove_stored_value(key)
             value = self.internal_storage.get_value(key)
             self.assertIsNone(value)
+
+    def test_read_old_values(self):
+        """Tests that old InternalStorage values can be read in new storage"""
+        value = "Something to write"
+        self.old_internal_storage.store_value(self.store_key, value)
+        self.assertEqual(value, self.old_internal_storage.get_value(self.store_key),
+                         "Value was not properly stored in old storage")
+        self.assertEqual(value, self.internal_storage.get_value(self.store_key),
+                          "Value in old storage could not be read with new code")
+        self.internal_storage.remove_stored_value(self.store_key)
+        self.assertIsNone(self.old_internal_storage.get_value(self.store_key),
+                          "Deleted value was read in old storage")
+        self.assertIsNone(self.internal_storage.get_value(self.store_key),
+                          "Deleted value was read in storage")
+
+    def test_read_new_values(self):
+        """Tests that new InternalStorage values can NOT be read in old storage"""
+        value = "Something to write"
+        self.internal_storage.store_value(self.store_key, value)
+        self.assertEqual(value, self.internal_storage.get_value(self.store_key),
+                          "Value in new storage could not be read with new code")
+        self.assertNotEqual(value, self.old_internal_storage.get_value(self.store_key),
+                         "Value was not properly stored in old storage")
+        self.internal_storage.remove_stored_value(self.store_key)
+        self.assertIsNone(self.old_internal_storage.get_value(self.store_key),
+                          "Deleted value was read in old storage")
+        self.assertIsNone(self.internal_storage.get_value(self.store_key),
+                          "Deleted value was read in storage")
+
+    def test_delete_chunks(self):
+        """Tests that all chunks are deleted from a certain key"""
+        n_chunks = 10
+        value = get_random_string(self.internal_storage.chunk_size * n_chunks)
+        self.internal_storage.store_value(self.store_key, value)
+        self.assertEqual(value, self.internal_storage.get_value(self.store_key),
+                         "Value was not properly stored")
+        self.internal_storage.remove_stored_value(self.store_key)
+        self.assertIsNone(self.internal_storage.get_value(self.store_key),
+                          "Value was not properly deleted")
+        for idx_chunk in range(n_chunks):
+            chunk_name = self.internal_storage.chunk_name(self.store_key, idx_chunk)
+            self.assertIsNone(self.internal_storage.get_value(chunk_name),
+                              f"Chunk #{idx_chunk} was not deleted")
 
 
 if __name__ == '__main__':
