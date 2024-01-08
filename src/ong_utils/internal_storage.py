@@ -88,7 +88,11 @@ class InternalStorageV0(InternalStorageBase):
         """Deserializes and decompresses a string into is original value"""
         if value is None:
             return None
-        return json.loads(decompress_string(value))
+        try:
+            retval = json.loads(decompress_string(value))
+            return retval
+        except:
+            return None
 
     def store_value(self, key: str, value):
         """Stores something in keyring"""
