@@ -1,6 +1,9 @@
-# Needs pip install pyjwt
-import jwt
 from datetime import datetime
+from ong_utils.import_utils import raise_extra_exception
+try:
+    import jwt
+except ModuleNotFoundError:
+    raise_extra_exception("jwt")
 
 
 def decode_jwt_token(access_token: str) -> dict:

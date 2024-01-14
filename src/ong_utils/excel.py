@@ -1,9 +1,13 @@
 """
 Some helper functions to work with openpyxl: write tables, use autofilters, read_excel when it fails...
 """
-import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.worksheet.table import TableStyleInfo, Table
+from ong_utils.import_utils import raise_extra_exception
+try:
+    import pandas as pd
+    from openpyxl import load_workbook
+    from openpyxl.worksheet.table import TableStyleInfo, Table
+except ModuleNotFoundError:
+    raise_extra_exception("xlsx")
 
 
 def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index=False, add_table: bool = True):

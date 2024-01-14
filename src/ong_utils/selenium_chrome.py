@@ -7,11 +7,15 @@ from __future__ import annotations
 import logging
 import platform
 
-import selenium.common.exceptions
-from seleniumwire import webdriver
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait
-import seleniumwire.undetected_chromedriver as uc
+from ong_utils.import_utils import raise_extra_exception
+try:
+    import selenium.common.exceptions
+    from seleniumwire import webdriver
+    from selenium.common.exceptions import TimeoutException
+    from selenium.webdriver.support.ui import WebDriverWait
+    import seleniumwire.undetected_chromedriver as uc
+except ModuleNotFoundError:
+    raise_extra_exception("selenium")
 
 
 class Chrome:
