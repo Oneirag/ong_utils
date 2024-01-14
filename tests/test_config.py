@@ -4,6 +4,7 @@ import yaml
 import unittest
 import tempfile
 import keyring
+from unittest.mock import patch
 
 
 def read_file(filename: str) -> str:
@@ -17,6 +18,9 @@ class TestConfig(unittest.TestCase):
 
     service_name = "test_service_name_none_should_reuse_ever"
     user_name = "test_user_name_none_should_reuse_ever"
+    sample_key = "a_key"
+    sample_value = "a_value"
+    sample_config_dict = {sample_key: sample_value}
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -25,8 +29,14 @@ class TestConfig(unittest.TestCase):
         cls.app_name = "test_case"
         # Create emtpy config
         with open(cls.cfg_filename, "w") as f:
-            yaml.dump({cls.app_name: []}, f)
+            # yaml.dump({cls.app_name: []}, f)
+            # cfg_content = yaml.dump({cls.app_name: {}})
+            cfg_content = yaml.dump({cls.app_name: cls.sample_config_dict, "log": {},
+                                     cls.app_name + "_test": cls.sample_config_dict})
+            f.write(cfg_content)
+            print(cfg_content)
         print(cls.cfg_filename)
+
         cls.cfg = OngConfig(cls.app_name, cfg_filename=cls.cfg_filename)
         cls.logger = cls.cfg.logger
         cls.config = cls.cfg.config
@@ -49,9 +59,11 @@ class TestConfig(unittest.TestCase):
         # File content must remain unchanged
         self.assertEqual(fc, read_file(self.cfg.config_filename), "Configuration has been changed!")
 
-    def test_keyring(self):
+    @patch("getpass.getpass")
+    def test_keyring(self, getpass):
         """Test get_password and set_password. Creates a password, checks that can be read, asks for a new one, prints
         it and finally deletes it"""
+        getpass.return_value = "silly_password"
         username_key = "username"
         service_key = "service"
         username = self.config(username_key, None)
@@ -76,7 +88,7 @@ class TestConfig(unittest.TestCase):
             if contents:
                 # Create an empty log file (deleting existing, if any)
                 open(self.log_filename, "w").close()
-                self.assertTrue(test_message in contents, "Log was deleted")
+                self.assertFalse(test_message in contents, "Log was not properly deleted")
 
         # Log a test message
         self.logger.info(test_message)
@@ -95,6 +107,13 @@ class TestConfig(unittest.TestCase):
         print(contents)
         self.assertEqual(len(lines), num_others + 1, "Not all logs where written")
         self.assertTrue(all(test_message in line for line in lines), "Incorrect log")
+
+    def test_config_test(self):
+        """Tests that config_test function works properly"""
+        test = self.cfg.config_test
+        retval = test(self.sample_key)
+        self.assertEqual(retval, self.sample_value)
+        self.logger.info(f"{test(self.sample_key)=}")
 
     @classmethod
     def tearDownClass(cls) -> None:
