@@ -18,7 +18,8 @@ from ong_utils.internal_storage import InternalStorage
 from ong_utils.parse_html import find_js_variable
 from ong_utils.timers import OngTimer
 from ong_utils.urllib3_utils import create_pool_manager, cookies2header, get_cookies
-from ong_utils.utils import LOCAL_TZ, is_debugging, to_list
+from ong_utils.utils import (LOCAL_TZ, is_debugging, to_list, is_mac, is_linux, is_windows, get_current_user,
+                             get_current_domain)
 from ong_utils.web import find_available_port
 
 

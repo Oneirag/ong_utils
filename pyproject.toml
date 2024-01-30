@@ -16,6 +16,7 @@ optional-dependencies.jwt = {file = ["requirements_jwt.txt"]}
 optional-dependencies.shortcuts = {file = ["requirements_shortcuts.txt"]}
 optional-dependencies.xlsx = {file = ["requirements_xlsx.txt"]}
 optional-dependencies.selenium = {file = ["requirements_selenium.txt"]}
+optional-dependencies.password = {file = ["requirements_password.txt"]}
 
 
 [tool.setuptools.packages.find]
