@@ -21,6 +21,7 @@ from ong_utils.urllib3_utils import create_pool_manager, cookies2header, get_coo
 from ong_utils.utils import (LOCAL_TZ, is_debugging, to_list, is_mac, is_linux, is_windows, get_current_user,
                              get_current_domain)
 from ong_utils.web import find_available_port
+from ong_utils.ui import simple_dialog, user_domain_password_dialog
 
 
 import_excepts = (ModuleNotFoundError, NameError, AdditionalRequirementException)
@@ -37,3 +38,8 @@ try:
     from ong_utils.selenium_chrome import Chrome
 except import_excepts:
     Chrome = raise_extra_install("selenium")
+try:
+    from ong_utils.credentials import verify_credentials
+except import_excepts:
+    verify_credentials = raise_extra_install("credentials")
+

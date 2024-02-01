@@ -28,7 +28,7 @@ def _verify_credentials_windows(username: str, domain: str, password: str) -> bo
             win32security.LOGON32_PROVIDER_DEFAULT
         )
     except ModuleNotFoundError:
-        raise_extra_exception("password")
+        raise_extra_exception("credentials")
     except win32security.error as e:
         return False
     except Exception as e:
@@ -45,7 +45,7 @@ def _verify_credentials_unix(username: str, password: str) -> bool:
         pam_auth = pam.pam()
         return pam_auth.authenticate(username, password, service='login')
     except ModuleNotFoundError:
-        raise_extra_exception("password")
+        raise_extra_exception("credentials")
     except pam.PAMError as e:
         print(f"Authentication failed: {e}")
         return False

@@ -11,12 +11,19 @@ description = "Common utilities for python projects"
 
 dynamic = ["dependencies", "optional-dependencies"]
 [tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-optional-dependencies.jwt = {file = ["requirements_jwt.txt"]}
-optional-dependencies.shortcuts = {file = ["requirements_shortcuts.txt"]}
-optional-dependencies.xlsx = {file = ["requirements_xlsx.txt"]}
-optional-dependencies.selenium = {file = ["requirements_selenium.txt"]}
-optional-dependencies.password = {file = ["requirements_password.txt"]}
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies.jwt = { file = ["requirements_jwt.txt"] }
+optional-dependencies.shortcuts = { file = ["requirements_shortcuts.txt"] }
+optional-dependencies.xlsx = { file = ["requirements_xlsx.txt"] }
+optional-dependencies.selenium = { file = ["requirements_selenium.txt"] }
+optional-dependencies.credentials = { file = ["requirements_credentials.txt"] }
+optional-dependencies.all = { file = [
+    "requirements_credentials.txt",
+    "requirements_selenium.txt",
+    "requirements_xlsx.txt",
+    "requirements_shortcuts.txt",
+    "requirements_jwt.txt"
+] }
 
 
 [tool.setuptools.packages.find]
