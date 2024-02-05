@@ -15,6 +15,7 @@ of the computer).
 * a `get_cookies` function to extract a dict of cookies from a response of a urllib3 request. [Read more](#urllib3-utils)
 * a class to store any data into keyring (e.g. strings, dicts...). [Read more](#storing-long-data-in-keyring)
 * functions to parse html pages and extract javascript variables (such as CSRF tokens or links). [Read more](#parsing-html-pages)
+* Class to read/apply sensitivity labels to a file (Public, Internal...) [Read more](#add-sensitivy-labels-to-office-files)
 
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
@@ -28,6 +29,9 @@ Installing `pip install ong_utils[jwt]`:
 
 Installing `pip install ong_utils[selenium]`:
 * class to manage Chrome using selenium. [Read more](#control-webpages-with-selenium)
+
+Installing `pip install ong_utils[office]`:
+* Classes to interact with API of Office in windows. [Read more](#create-instances-of-office-programs)
 
 ## General usage
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
@@ -414,3 +418,41 @@ token = chrome.wait_for_auth_token("someserver.com", "someserver.com/api/interes
 if token:
     do_stuff_here()
 ```
+## Utilities for Office
+
+### Create instances of office programs
+Use classes in `ong_utils.office.office`, to open files with Offfice API in windows.
+
+Avoids problems with cache that might happen from time to time,
+
+Sample code:
+
+````python
+from ong_utils.office.office_base import WordBase, ExcelBase, PowerpointBase
+
+
+class MyWord(WordBase):
+  def __init__(self, file, logger):
+    super().__init__(logger)
+    self.file = self.client.Open(file)
+
+
+````
+
+### Add Sensitivy Labels to office files
+Use a sample office file to apply sensitivity labels to other file, or if you know the label name, apply the label name.
+
+Works properly with Internal and Public, might not work well with Private or Restricted files
+
+Sample code;
+````python
+from ong_utils import SensitivityLabel
+# Case 1: you know the sensitivity label to apply
+sl = SensitivityLabel("XXXXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")
+sl.apply(my_filename)
+# Case 2: you don't know label name, but what to clone an existing one (must be an Excel/Word/Powerpoint file)
+SensitivityLabel(reference_file).apply(my_file)
+# Case 3: get label name from a file and print it
+print(label_id:=SensitivityLabel(reference_file).label_id)
+# label_id can be used to apply to further docs, e.g.: SensitivityLabel(label_id).apply(filename)
+````

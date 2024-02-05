@@ -10,6 +10,7 @@ import platform
 from ong_utils.import_utils import raise_extra_exception
 try:
     import selenium.common.exceptions
+    from selenium import webdriver as selenium_webdriver
     from seleniumwire import webdriver
     from selenium.common.exceptions import TimeoutException
     from selenium.webdriver.support.ui import WebDriverWait
@@ -21,17 +22,21 @@ except ModuleNotFoundError:
 class Chrome:
 
     def __init__(self, driver_path: str = None, profile_path: str = None, undetected: bool = False,
-                 logger: logging.Logger = None, block_pages: str | list = None):
+                 logger: logging.Logger = None, block_pages: str | list = None, use_selenium: bool = False):
         """
-        Initializes a selenium Chrome web driver
+        Initializes a selenium Chrome web driver using seleniumwire
         :param driver_path: path for Chrome web driver executable (defaults to current path)
         :param profile_path: path for Chrome profile (navigate to chrome://settings). If None,
-        :param undetected: True to use undetected chrome driver
+        :param undetected: True to use undetected chrome driver under seleniumwire
         :param logger: optional logger for informing about building driver
         :param block_pages: a page (or list of pages) to intercept block
+        :param use_selenium: True to use standard selenium driver, False (default) to use seleniumwire
         """
         self.logger = logger
         self.undetected = undetected
+        self.use_selenium = use_selenium
+        if self.use_selenium and self.undetected:
+            raise ValueError("You cannot use use_selenium=True and undetected=True at the same time")
         self.driver_path = driver_path
         self.profile_path = profile_path
         self.__driver = None
@@ -49,13 +54,15 @@ class Chrome:
         elif any(request.url.startswith(blocked) for blocked in self.__block_pages):
             request.abort()
 
-    def get_driver(self, headless: bool = False, reuse_last: bool=False):
+    def get_driver(self, headless: bool = False, reuse_last: bool = False, seleniumwire_options: dict = None):
         """
         Starts chrome and returns driver instance
         :param headless: True to run in headless mode. Defaults to False
         :param reuse_last: True to return last opened driver (if any), False (default) to create a new one
+        :param seleniumwire_options: optional dict to pass to seleniumwire
         :return: a chrome driver
         """
+        seleniumwire_options = seleniumwire_options or dict()
         if reuse_last and self.__driver is not None:
             return self.__driver
         self.quit_driver()     # Close previous driver instances
@@ -76,9 +83,11 @@ class Chrome:
             self.logger.debug(f"Initializing driver with options: {options}")
         try:
             if self.undetected:
-                self.__driver = uc.Chrome(options=options)
+                self.__driver = uc.Chrome(options=options, seleniumwire_options=seleniumwire_options)
+            elif not self.use_selenium:
+                self.__driver = webdriver.Chrome(options=options, seleniumwire_options=seleniumwire_options)
             else:
-                self.__driver = webdriver.Chrome(options=options)
+                self.__driver = selenium_webdriver.Chrome(options=options)
         except selenium.common.exceptions.SessionNotCreatedException as snce:
             if platform.system() == "Darwin":   # is macos
                 cmd = "sudo killall Google\ Chrome"
