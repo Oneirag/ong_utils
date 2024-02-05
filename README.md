@@ -16,7 +16,8 @@ of the computer).
 * a class to store any data into keyring (e.g. strings, dicts...). [Read more](#storing-long-data-in-keyring)
 * functions to parse html pages and extract javascript variables (such as CSRF tokens or links). [Read more](#parsing-html-pages)
 * Class to read/apply sensitivity labels to a file (Public, Internal...) [Read more](#add-sensitivy-labels-to-office-files)
-
+* functions to get current user and domain. [Read more](#get-current-user-and-domain)
+* functions for simple input dialogs with validations using tk [Read more](#simple-dialogs)
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
 * functions to create desktop shortcuts for packages installed with pip. [Read more](#make-shortcuts-for-entry-points)
@@ -32,6 +33,9 @@ Installing `pip install ong_utils[selenium]`:
 
 Installing `pip install ong_utils[office]`:
 * Classes to interact with API of Office in windows. [Read more](#create-instances-of-office-programs)
+
+Installing `pip install ong_utils[credentials]`:
+* function to verify password of current log in user. [Read more](#control-webpages-with-selenium)
 
 ## General usage
 Simple example of an __init__.py in a package ("mypackage") using ong_utils:
@@ -456,3 +460,81 @@ SensitivityLabel(reference_file).apply(my_file)
 print(label_id:=SensitivityLabel(reference_file).label_id)
 # label_id can be used to apply to further docs, e.g.: SensitivityLabel(label_id).apply(filename)
 ````
+
+## Get current user and domain
+Reads it from environ variables
+```python
+from ong_utils import get_current_user, get_current_domain
+print(get_current_user())       # Prints current user
+print(get_current_domain())     # Prints current domain. Could be empty
+```
+
+## Verify password of current log in user
+Install `ong_utils[credentials]` to check correct password for current user. Works in windows and linux/macos
+```python
+from ong_utils import verify_credentials
+username = "your current username" # get it from ong_utils.get_current_user()
+domain = "your domain, needed in windows"   # For linux/macos could be empty. Get it from ong_utils.get_current_domain()
+password = "your password goes here"
+if verify_credentials(username, domain, password):
+  print("Your password is ok")
+else:
+  print("Bad password")
+```
+
+## Simple dialogs
+Use `ong_utils.simple_dialog` for build a dialog with custom controls and validations.
+Use `user_domain_password_dialog` for a dialog that shows username, domain and password.
+
+### Custom dialog
+Use `ong_utils.dialog` to build a dialog with multiple string entry items and custom validations. You have to inform the elements of the dialog using a list of `ong_utils.ui.UiField` classes
+
+Sample code to show the following window:
+![dialog_form_macos.png](img%2Fdialog_form_macos.png)
+```python
+from ong_utils import simple_dialog, get_current_domain, get_current_user
+from ong_utils.ui import UiField
+# Optional function to validate credentials. Could be other function or None
+from ong_utils import verify_credentials
+field_list = [UiField(name="domain",        # Key of the dict in the return dictionary and for validation functions 
+                      label="Domain",       # Name to the shown for the user
+                      default_value=get_current_domain(),    # Default value to be used
+                      editable=False        # Not editable (by default all fields are editable)
+                      ),
+              UiField(name="username", label="User", default_value=get_current_user()),
+              UiField(name="password", label="Password", default_value="",
+                      show="*",         # Hides password by replacing with *
+                      validation_func=verify_credentials    # The validation function receives values of all fields, so should accept extra **kwargs
+                      ),
+              UiField(name="server", label="Server")]
+# Call the function to open the login window with custom options
+res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
+                   field_list=field_list)
+print(res)
+```
+
+### Login dialog form for username, domain and password
+In the case of a simple login form such as
+![login_form_macos.png](img%2Flogin_form_macos.png)
+use the following code
+```python
+from ong_utils import user_domain_password_dialog
+
+def validation(**kwargs) -> bool:
+  """A function that receives a dict and returns bool
+  the dict receives the keys username, domain and password.
+  Could use the ong_utils.verify_credentials to verify against current log in user
+  """
+  if len(kwargs['password']) > 5:
+    return True
+  else:
+    return False
+
+# This will show a form with current username and domain (not editable) and a password (that will be shown with *)
+result = user_domain_password_dialog(title="your title goes here",
+                                     description="A label to show context to the user",
+                                     validate_password=validation, # pass None to skip validation
+                                     parent=None    # or the main window to use
+                                     )
+print(result)   # could be {} if user cancelled or a dict of "username", "domain", "password"
+```

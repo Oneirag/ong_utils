@@ -5,9 +5,9 @@ Needs to download webdriver for Chrome from https://sites.google.com/chromium.or
 from __future__ import annotations
 
 import logging
-import platform
 
 from ong_utils.import_utils import raise_extra_exception
+from ong_utils.utils import is_mac
 try:
     import selenium.common.exceptions
     from selenium import webdriver as selenium_webdriver
@@ -89,7 +89,7 @@ class Chrome:
             else:
                 self.__driver = selenium_webdriver.Chrome(options=options)
         except selenium.common.exceptions.SessionNotCreatedException as snce:
-            if platform.system() == "Darwin":   # is macos
+            if is_mac():   # is macos
                 cmd = "sudo killall Google\ Chrome"
                 print(f"Could not create session. Try executing '{cmd}'")
             raise
