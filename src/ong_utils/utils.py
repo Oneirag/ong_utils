@@ -67,6 +67,7 @@ def get_current_user() -> str:
 def get_current_domain() -> str:
     return os.getenv("USERDOMAIN", "")
 
+
 def get_computername() -> str:
     return platform.node()
 
