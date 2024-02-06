@@ -23,9 +23,11 @@ class _OfficeBase:
         """This must return the client_name for EnsureDispatch, such as Excel.Application or Word.Application"""
         return ""
 
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, quit_on_exit: bool = True):
+        """Creates a office instance, with an optional logger and closing or not client on exit"""
         self.logger = logger
         self.__client = None
+        self.__quit_on_exit = quit_on_exit
 
     @property
     def client(self):
@@ -64,8 +66,9 @@ class _OfficeBase:
                 self.__client.Quit()
 
     def __del__(self):
-        """Exits discarding changes"""
-        self.quit()
+        """Exits discarding changes, if quit_on_exit was True in class constructor"""
+        if self.__quit_on_exit:
+            self.quit()
 
 
 class ExcelBase(_OfficeBase):
