@@ -7,21 +7,23 @@ from ong_utils.office.office_base import AccessBase, PowerpointBase, ExcelBase, 
 
 
 class TestOfficeBaseClasses(unittest.TestCase):
-    base_dir = os.path.join(os.path.dirname(__file__), "test_files")
+    test_dir = "test_files"
 
     def get_sample_filename(self, sample_filename: str) -> str:
         """Gets full path of a sample filename"""
-        sample_file = os.path.join(self.base_dir, sample_filename)
+        base_dir = os.path.join(os.path.dirname(__file__), self.test_dir)
+        sample_file = os.path.join(base_dir, sample_filename)
         if os.path.isfile(sample_file):
             return sample_file
         raise FileNotFoundError(f"Could not open {sample_file}")
 
     def open_file(self, class_: Type[_OfficeBase], sample_filename: str):
-        filename = self.get_sample_filename(sample_filename)
-        obj = class_()
-        obj.open(filename)
-        time.sleep(2)
-        obj.quit()
+        for filename in self.get_sample_filename(sample_filename), os.path.join(self.test_dir, sample_filename):
+            with self.subTest(filename=filename):
+                obj = class_()
+                obj.open(filename)
+                time.sleep(2)
+                obj.quit()
 
     def test_excel_base(self):
         """Tests that a xlsx opens and closes properly without exceptions"""

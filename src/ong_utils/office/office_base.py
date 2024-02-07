@@ -2,7 +2,10 @@
 Base class to use Office Automation. Creates the corresponding office app, cleans cache if needed and
 exits properly discarding changes
 """
+import os.path
+
 from ong_utils.import_utils import raise_extra_exception
+
 try:
     from win32com import client, __gen_path__
 except ModuleNotFoundError:
@@ -11,12 +14,24 @@ from pathlib import Path
 import re
 from shutil import rmtree
 from abc import abstractmethod
+from functools import wraps
+
+
+def fix_filename(method):
+    @wraps(method)
+    def _impl(self, filename, *method_args, **method_kwargs):
+        filename = os.path.abspath(filename)
+        method_output = method(self, filename, *method_args, **method_kwargs)
+        return method_output
+
+    return _impl
 
 
 class _OfficeBase:
     """
     Base class for automation of office applications under windows.
     """
+
     @property
     @abstractmethod
     def client_name(self) -> str:
@@ -89,11 +104,13 @@ class _OfficeBase:
                 print(e)
                 pass
 
+
 class ExcelBase(_OfficeBase):
     @property
     def client_name(self) -> str:
         return "Excel.Application"
 
+    @fix_filename
     def open(self, filename: str):
         self.file = self.client.Workbooks.Open(filename)
 
@@ -103,6 +120,7 @@ class WordBase(_OfficeBase):
     def client_name(self) -> str:
         return "Word.Application"
 
+    @fix_filename
     def open(self, filename: str):
         """Opens a word document"""
         self.file = self.client.Documents.Open(filename)
@@ -113,6 +131,7 @@ class AccessBase(_OfficeBase):
     def client_name(self) -> str:
         return "Access.Application"
 
+    @fix_filename
     def open(self, filename: str):
         self.file = self.client.OpenCurrentDatabase(filename)
 
@@ -122,6 +141,7 @@ class PowerpointBase(_OfficeBase):
     def client_name(self) -> str:
         return "PowerPoint.Application"
 
+    @fix_filename
     def open(self, filename: str):
         """Opens a ppt filename"""
         self.file = self.client.Presentations.Open(FileName=filename, WithWindow=1)
@@ -135,5 +155,3 @@ class OutlookBase(_OfficeBase):
     def open(self, filename: str):
         """Does nothing: opening outlook documents makes no sense"""
         pass
-
-
