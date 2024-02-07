@@ -24,10 +24,16 @@ class _OfficeBase:
         return ""
 
     def __init__(self, logger=None, quit_on_exit: bool = True):
-        """Creates a office instance, with an optional logger and closing or not client on exit"""
+        """Creates an office instance, with an optional logger and closing or not client on exit"""
         self.logger = logger
         self.__client = None
+        self.file = None
         self.__quit_on_exit = quit_on_exit
+
+    @abstractmethod
+    def open(self, filename: str):
+        """Opens a file from given path"""
+        pass
 
     @property
     def client(self):
@@ -56,6 +62,13 @@ class _OfficeBase:
     def quit(self):
         """Exits discarding changes"""
         if self.__client:
+            # Close file if already opened, discarding changes
+            if self.file:
+                if self.client_name.startswith("PowerPoint"):
+                    self.file.Close()
+                else:
+                    self.file.Close(False)
+                self.file = None
             if self.client_name.startswith("Excel"):
                 self.__client.DisplayAlerts = False
                 self.__client.Quit()
@@ -64,17 +77,25 @@ class _OfficeBase:
             else:
                 # In PowerPoint this could make a message to be shown if presentations are not saved before closing
                 self.__client.Quit()
+            self.__client = None
 
     def __del__(self):
         """Exits discarding changes, if quit_on_exit was True in class constructor"""
         if self.__quit_on_exit:
-            self.quit()
-
+            try:
+                self.quit()
+            except Exception as e:
+                # exception could be risen if there are other opened documents not saved
+                print(e)
+                pass
 
 class ExcelBase(_OfficeBase):
     @property
     def client_name(self) -> str:
         return "Excel.Application"
+
+    def open(self, filename: str):
+        self.file = self.client.Workbooks.Open(filename)
 
 
 class WordBase(_OfficeBase):
@@ -82,11 +103,18 @@ class WordBase(_OfficeBase):
     def client_name(self) -> str:
         return "Word.Application"
 
+    def open(self, filename: str):
+        """Opens a word document"""
+        self.file = self.client.Documents.Open(filename)
+
 
 class AccessBase(_OfficeBase):
     @property
     def client_name(self) -> str:
         return "Access.Application"
+
+    def open(self, filename: str):
+        self.file = self.client.OpenCurrentDatabase(filename)
 
 
 class PowerpointBase(_OfficeBase):
@@ -94,10 +122,18 @@ class PowerpointBase(_OfficeBase):
     def client_name(self) -> str:
         return "PowerPoint.Application"
 
+    def open(self, filename: str):
+        """Opens a ppt filename"""
+        self.file = self.client.Presentations.Open(FileName=filename, WithWindow=1)
+
 
 class OutlookBase(_OfficeBase):
     @property
     def client_name(self) -> str:
         return "Outlook.Application"
+
+    def open(self, filename: str):
+        """Does nothing: opening outlook documents makes no sense"""
+        pass
 
 
