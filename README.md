@@ -506,7 +506,9 @@ field_list = [UiField(name="domain",        # Key of the dict in the return dict
                       show="*",         # Hides password by replacing with *
                       validation_func=verify_credentials    # The validation function receives values of all fields, so should accept extra **kwargs
                       ),
-              UiField(name="server", label="Server")]
+              UiField(name="server", label="Server",
+                      width=40      # Use width parameter to make this Entry field longer. Use it in all to make all fields longer
+                      )]
 # Call the function to open the login window with custom options
 res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
                    field_list=field_list)

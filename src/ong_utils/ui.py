@@ -34,6 +34,8 @@ class UiField:
     validation_func: Callable[[dict], bool] = None
     # state of the tk.Entry. True is editable, false will make not editable
     editable: bool = True
+    # Width parameter of an Entry field, make it longer if needed
+    width: int = 20
 
     @property
     def state(self):
@@ -59,7 +61,7 @@ class _SimpleDialog(Dialog):
             # Label and entry for the username
             label = ttk.Label(master, text=_(field.label))
             label.grid(row=row + 1, column=0, pady=5, padx=10, sticky="w")
-            entry = ttk.Entry(master, show=field.show)
+            entry = ttk.Entry(master, show=field.show, width=field.width)
             entry.insert(0, field.default_value)
             if not field.editable:
                 # entry.configure(state='readonly')
@@ -159,7 +161,9 @@ if __name__ == '__main__':
                           # validation_func=verify_credentials
                           # The validation function receives values of all fields, so should accept extra **kwargs
                           ),
-                  UiField(name="server", label="Server")]
+                  UiField(name="server", label="Server",
+                          width=40)     # Use width parameter to make entry longer
+                  ]
     # Call the function to open the login window with custom options
     res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
                         field_list=field_list)

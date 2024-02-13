@@ -1,5 +1,6 @@
 """
-Tests of the Excel module of ong_utils
+Tests of the Excel module of ong_utils.
+Also adds sensitivity labels to the created files, based on the Excel file of the test_files folder
 """
 import os
 import unittest
@@ -8,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from ong_utils.excel import df_to_excel
+from ong_utils import SensitivityLabel
 
 
 class TestExcelUtils(unittest.TestCase):
@@ -24,15 +26,18 @@ class TestExcelUtils(unittest.TestCase):
             pd.DataFrame(np.random.randint(0, 100, size=(100, 4)), columns=list('ABCD')),
             pd.DataFrame(np.random.randint(0, 100, size=(100, 4)))
         ]
+        sample_excel = os.path.join(os.path.dirname(__file__), "test_files", "excel_sample.xlsx")
+        self.sensitivity_label = SensitivityLabel(sample_excel)
         self.delete_test_file()
 
     def test_write_xlsx(self):
-        """Tests that excel sheets can be written (correct libraries are installed)"""
+        """Tests that Excel sheets can be written (correct libraries are installed)"""
         for df in self.dfs:
             with self.subTest(df=df):
                 with pd.ExcelWriter(self.test_file) as xlsx:
                     print(f"Writing {self.test_file} using engine={xlsx.engine}")
                     df.to_excel(xlsx, sheet_name=self.test_sheet)
+                self.sensitivity_label.apply(self.test_file)
                 self.assertTrue(os.path.isfile(self.test_file), "No file created")
                 self.delete_test_file()
 
@@ -43,6 +48,7 @@ class TestExcelUtils(unittest.TestCase):
                 self.delete_test_file()
                 with pd.ExcelWriter(self.test_file, engine="openpyxl") as xlsx:
                     df_to_excel(df, xlsx, sheet_name=self.test_sheet)
+                self.sensitivity_label.apply(self.test_file)
                 self.assertTrue(os.path.isfile(self.test_file), "Test file was not created")
                 self.delete_test_file()
 
