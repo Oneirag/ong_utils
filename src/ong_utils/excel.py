@@ -1,9 +1,13 @@
 """
 Some helper functions to work with openpyxl: write tables, use autofilters, read_excel when it fails...
 """
-import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.worksheet.table import TableStyleInfo, Table
+from ong_utils.import_utils import raise_extra_exception
+try:
+    import pandas as pd
+    from openpyxl import load_workbook
+    from openpyxl.worksheet.table import TableStyleInfo, Table
+except ModuleNotFoundError:
+    raise_extra_exception("xlsx")
 
 
 def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index=False, add_table: bool = True):
@@ -11,7 +15,7 @@ def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index
     Writes a df to an opened Excel, fitting column with and adding Tables or activating autofilter
     Args:
         df: DataFrame to write
-        writer: already opened excel writer
+        writer: already opened excel writer, with engine = "openpyxl" (otherwise a ValueError will be raised)
         sheet_name: name of the sheet to write in
         index: False (default) to not write index to excel
         add_table: True (default) to add Tables to excel, False to add just autofilter
@@ -19,7 +23,10 @@ def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index
     Returns:
         None
     """
-    cols = [c.upper() for c in df.columns]
+    if writer.engine != "openpyxl":
+        raise ValueError(f"Error: writer engine ({writer.engine}) must be openpyxl, "
+                         f"e.g.: pd.ExcelWriter('filename.xlsx', engine='openpyxl')")
+    cols = [c.upper() if isinstance(c, str) else c for c in df.columns]
     if len(set(cols)) < len(cols):  # There are duplicated values
         new_cols = [f"{c}_{i}" if c.upper() in cols[i + 1:] else c for i, c in enumerate(df.columns)]
         df.columns = new_cols
@@ -30,8 +37,8 @@ def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index
     ws = writer.sheets[sheet_name]
     columns = ws.columns
     for column, xls_column in zip(df, columns):
-        column_length = max(df[column].astype(str).map(len).max(), len(column))
-        column_length = max(column_length, len(column))  # Include headers in calculation
+        column_length = max(df[column].astype(str).map(len).max(), len(str(column)))
+        column_length = max(column_length, len(str(column)))  # Include headers in calculation
         ws.column_dimensions[xls_column[0].column_letter].width = column_length
 
     if add_table:
@@ -39,7 +46,7 @@ def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index
         style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
                                showLastColumn=False, showRowStripes=True, showColumnStripes=True)
         # create a table
-        tab = Table(displayName=sheet_name, ref=ws.dimensions, tableStyleInfo=style)
+        tab = Table(displayName=sheet_name.replace(" ", "_"), ref=ws.dimensions, tableStyleInfo=style)
         '''
         Table must be added using ws.add_table() method to avoid duplicate names.
         Using this method ensures table name is unique through out defined names and all other table name. 

@@ -14,9 +14,13 @@ import tempfile
 import zipfile
 from importlib.metadata import distribution
 
-import pyshortcuts.shortcut
-from pyshortcuts import make_shortcut, platform, shortcut, get_folders
-from wheel.bdist_wheel import bdist_wheel
+from ong_utils.import_utils import raise_extra_exception
+try:
+    import pyshortcuts.shortcut
+    from pyshortcuts import make_shortcut, platform, shortcut, get_folders
+    from wheel.bdist_wheel import bdist_wheel
+except ModuleNotFoundError:
+    raise_extra_exception("shortcuts")
 
 
 def is_pip() -> bool:

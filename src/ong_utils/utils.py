@@ -1,3 +1,13 @@
+"""
+General utils that do not need additional libraries to the ong_utils base libraries:
+    - get local timezone    (uses dateutil)
+    - check if is debugging
+    - conversion of a value to list
+    - checks if is mac, linux or windows
+    - get user and domain
+"""
+import os
+import platform
 import sys
 
 import dateutil.tz
@@ -23,3 +33,46 @@ def to_list(value) -> list:
     if isinstance(value, (list, tuple)):
         return value
     return [value]
+
+
+"""
+Functions to detect under which OS the code is running
+"""
+
+
+def is_mac() -> bool:
+    """True if running in macos"""
+    return platform.system() == "Darwin"
+
+
+def is_windows() -> bool:
+    """True if running Windows"""
+    return platform.system() == "Windows"
+
+
+def is_linux() -> bool:
+    """True if running Linux"""
+    return platform.system() == "Linux"
+
+
+"""
+Functions to get current user and domain
+"""
+
+
+def get_current_user() -> str:
+    return os.getenv("USER", os.getenv("USERNAME"))
+
+
+def get_current_domain() -> str:
+    return os.getenv("USERDOMAIN", "")
+
+
+def get_computername() -> str:
+    return platform.node()
+
+
+if __name__ == '__main__':
+    print(f"{get_current_user()=}")
+    print(f"{get_current_domain()=}")
+    print(f"{get_computername()=}")

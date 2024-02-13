@@ -133,8 +133,9 @@ class OngConfig:
         :param username_cfg_key: the key of the config item storing the username (retrieved by calling self.config)
         :return: None
         """
+        password = getpass.getpass()
         return keyring.set_password(self.config(service_cfg_key, service_cfg_key),
-                                    self.config(username_cfg_key, username_cfg_key), getpass.getpass())
+                                    self.config(username_cfg_key, username_cfg_key), password)
 
     def add_app_config(self, item: str, value):
         """Adds a new value to app_config and stores it. Raises value error if item already existed"""
