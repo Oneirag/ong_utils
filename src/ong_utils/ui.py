@@ -66,7 +66,7 @@ class _SimpleDialog(Dialog):
             if not field.editable:
                 # entry.configure(state='readonly')
                 entry.configure(state=_STATE_DISABLED)
-            entry.grid(row=row + 1, column=1, pady=5, padx=(10, 10))
+            entry.grid(row=row + 1, column=1, pady=5, padx=(10, 10), sticky="w")
             self.ui_fields[field.name] = entry
             focus = entry
         return focus
