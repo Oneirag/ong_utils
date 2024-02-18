@@ -8,8 +8,20 @@ from tkinter import ttk, messagebox
 from tkinter.simpledialog import Dialog
 from typing import List, Callable
 
+from ong_utils import is_windows
 # from ong_utils.credentials import verify_credentials
 from ong_utils.utils import get_current_user, get_current_domain
+
+
+def fix_windows_gui_scale():
+    """Fixes "strange" look of tk in windows due to bad scaling,
+    based on https://stackoverflow.com/a/43046744"""
+    if is_windows():
+        from ctypes import windll
+        windll.shcore.SetProcessDpiAwareness(1)
+
+
+fix_windows_gui_scale()
 
 # Configure localization
 locale.setlocale(locale.LC_ALL, "")  # Use the system's default locale
@@ -162,7 +174,7 @@ if __name__ == '__main__':
                           # The validation function receives values of all fields, so should accept extra **kwargs
                           ),
                   UiField(name="server", label="Server",
-                          width=40)     # Use width parameter to make entry longer
+                          width=40)  # Use width parameter to make entry longer
                   ]
     # Call the function to open the login window with custom options
     res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
