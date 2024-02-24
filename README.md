@@ -18,6 +18,7 @@ of the computer).
 * Class to read/apply sensitivity labels to a file (Public, Internal...) [Read more](#add-sensitivy-labels-to-office-files)
 * functions to get current user and domain. [Read more](#get-current-user-and-domain)
 * functions for simple input dialogs with validations using tk [Read more](#simple-dialogs)
+* a function `fix_windows_gui_scale` to avoid blurry tkinter text elements in Windows 10 or 11. [Read more](#fix-windows-scaling)
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
 * functions to create desktop shortcuts for packages installed with pip. [Read more](#make-shortcuts-for-entry-points)
@@ -576,3 +577,20 @@ result = user_domain_password_dialog(title="your title goes here",
                                      )
 print(result)   # could be {} if user cancelled or a dict of "username", "domain", "password"
 ```
+## Fix windows scaling
+As answered in [https://stackoverflow.com/a/43046744](https://stackoverflow.com/a/43046744), in Windows 10 or 11, tk applications texts look blurry, such as:
+
+![blurry_form_windows.png](img%2Fblurry_form_windows.png)
+
+Use the function `fix_windows_gui_scale` to make it look properly like this:
+
+![sharpened_form_windows.png](img%2Fsharpened_form_windows.png)
+
+Some sample code (works in any OS, but will only sharpen texts in Windows):
+````python
+from ong_utils import fix_windows_gui_scale
+fix_windows_gui_scale()
+import tkinter as tk
+from tkinter import ttk
+# write your GUI code here...
+````
