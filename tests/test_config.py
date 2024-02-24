@@ -1,10 +1,12 @@
-from ong_utils import OngConfig
 import os
-import yaml
-import unittest
 import tempfile
-import keyring
+import unittest
 from unittest.mock import patch
+
+import keyring
+import yaml
+
+from ong_utils import OngConfig
 
 
 def read_file(filename: str) -> str:
@@ -15,7 +17,6 @@ def read_file(filename: str) -> str:
 
 
 class TestConfig(unittest.TestCase):
-
     service_name = "test_service_name_none_should_reuse_ever"
     user_name = "test_user_name_none_should_reuse_ever"
     sample_key = "a_key"
@@ -26,6 +27,7 @@ class TestConfig(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.temp_dir = tempfile.TemporaryDirectory()
         cls.cfg_filename = os.path.join(cls.temp_dir.name, "example.yaml")
+        cls.non_existing_cfg_file = os.path.join(cls.temp_dir.name, "non_existing.yaml")
         cls.app_name = "test_case"
         # Create emtpy config
         with open(cls.cfg_filename, "w") as f:
@@ -101,7 +103,7 @@ class TestConfig(unittest.TestCase):
         for _ in range(num_others):
             new_cfg = OngConfig(self.app_name, self.cfg_filename)
             new_cfg.logger.info(test_message)
-            del new_cfg     # destroy object, just in case
+            del new_cfg  # destroy object, just in case
         contents = read_file(self.log_filename)
         lines = contents.splitlines()
         print(contents)
@@ -114,6 +116,60 @@ class TestConfig(unittest.TestCase):
         retval = test(self.sample_key)
         self.assertEqual(retval, self.sample_value)
         self.logger.info(f"{test(self.sample_key)=}")
+
+    def test_multiple_instances(self):
+        """Tests that multiple instances of config share the same data"""
+        new_instance = OngConfig(cfg_filename=self.cfg_filename, project_name=self.app_name)
+        new_key = "new_key"
+        new_value = "sample new value"
+        self.assertIsNone(self.config(new_key, default_value=None),
+                          f"Key '{new_key}' already existed")
+        new_instance.add_app_config(new_key, new_value)
+        self.assertEqual(self.cfg.config(new_key), new_value,
+                         "Instances do not share same data")
+
+    def test_non_existing_file(self):
+        """Test if config for non_existing file works"""
+        # When a config is created from a non-existing file, it should raise an exception
+        with self.assertRaises(FileNotFoundError) as fnfe:
+            OngConfig(self.app_name, cfg_filename=self.non_existing_cfg_file,
+                      default_app_cfg=self.sample_config_dict)
+        # As in the previous step file is created, config should be read normally now
+        new_cfg = OngConfig(self.app_name, cfg_filename=self.non_existing_cfg_file)
+        # Test that config is correct
+        self.assertEqual(new_cfg.config(self.sample_key), self.sample_value)
+        # Now, delete config file and try to create config from default values
+        # without raising exception
+        os.remove(self.non_existing_cfg_file)
+        # this time exception should be not risen
+        new_cfg = OngConfig(self.app_name, cfg_filename=self.non_existing_cfg_file,
+                            default_app_cfg=self.sample_config_dict,
+                            write_default_file=True)
+        # Test that config is correct
+        self.assertEqual(new_cfg.config(self.sample_key), self.sample_value)
+
+    def test_add_update_keys_config(self):
+        """Test to add and update keys in the config file"""
+        new_key = "new key"
+        new_value = "new value"
+        brand_new_value = "brand new value"
+        # As the key is not existing, now a value error should be risen
+        with self.assertRaises(ValueError) as ve:
+            self.cfg.config(new_key)
+        # Exception should be risen: value does not yet exist
+        with self.assertRaises(ValueError) as ve:
+            self.cfg.update_app_config(new_key, new_value)
+        self.cfg.add_app_config(new_key, new_value)
+        self.assertEqual(self.cfg.config(new_key), new_value)
+        # Exception should be risen: value already exists
+        with self.assertRaises(ValueError) as ve:
+            self.cfg.add_app_config(new_key, new_value)
+        # Update value
+        self.cfg.update_app_config(new_key, brand_new_value)
+        self.assertEqual(self.cfg.config(new_key), brand_new_value)
+        # Test persistence: a new config should get the brand new value
+        new_cfg = OngConfig(self.app_name, cfg_filename=self.cfg_filename)
+        self.assertEqual(new_cfg.config(new_key), brand_new_value)
 
     @classmethod
     def tearDownClass(cls) -> None:

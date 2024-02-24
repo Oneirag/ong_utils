@@ -54,6 +54,42 @@ local_now = pd.Timestamp.now(tz=LOCAL_TZ)
 res = http.request("GET", config('url'))
 logger.info("Sample log")
 ```
+### Advanced usage
+Default values can be supplied, so a new file is created with the default values if it does not exist previously
+```python
+from ong_utils import OngConfig
+# The following code will create the config file with given default values and
+# will also raise an exception to stop the program so the user can review the file
+default_app_values = dict(a_kew=a_value)
+cfg = OngConfig(default_app_cfg=default_app_values)
+
+# The following code will create the config file with given default values and
+# but won't raise any exception, so the process will continue
+# This approach is usefull when the default values can be used without further edition
+default_app_values = dict(a_kew=a_value)
+cfg = OngConfig(default_app_cfg=default_app_values, 
+                write_default_file=True)
+
+```
+Values could be updated and writen to the config file during the execution of the code
+
+```python
+from ong_utils import OngConfig
+
+# Assume file already exists
+cfg = OngConfig("app_name")
+...
+# Add a new key and saves the config file. If the key existed, raises ValueError
+cfg.add_app_config("new key", "new value")
+print(cfg.config("new key"))  # Will print new value
+# Updates an existing key and saves in the config file. If the key did not exist, raises ValueError
+cfg.update_app_config("new key", "new value")
+print(cfg.config("new key"))  # Will print new value
+
+
+```
+
+
 
 ## Configuration files
 Config files are yaml/json files located (by default) in `~/.config/ongpi/{project_name}.{extension}`. 
