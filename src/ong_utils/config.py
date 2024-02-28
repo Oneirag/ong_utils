@@ -2,6 +2,7 @@ import getpass
 import logging
 import logging.config
 import os
+import warnings
 
 import keyring
 import ujson
@@ -22,6 +23,8 @@ class OngConfig:
     __app_cfg_global = dict()
     __log_cfg_global = dict()
     __test_cfg_global = dict()
+
+    __logger = dict()
 
     # Setters and getters for accessing to the app, log and test config
     @property
@@ -71,7 +74,6 @@ class OngConfig:
         self.__app_cfg = default_app_cfg or dict()
         self.__test_cfg = default_test_cfg or dict()
         self.__log_cfg = default_log_cfg or _default_logger_config(app_name=self.project_name)
-        self.__logger = None
         self.config_filename = None
         for ext, (loader, _) in self.extensions_cfg.items():
             if cfg_filename:
@@ -108,10 +110,11 @@ class OngConfig:
         if self.project_name in cfg:
             self.__app_cfg.update(cfg[self.project_name])
             self.__test_cfg.update(cfg.get(self.test_project_name) or dict())
-            self.__log_cfg.update(cfg.get("log") or dict())
-            self._fix_logger_config()
-            logging.config.dictConfig(self.__log_cfg)
-            self.__logger = logging.getLogger(self.project_name)
+            if self.project_name not in self.__logger:       # Update logger config just in case is not already initialized
+                self.__log_cfg.update(cfg.get("log") or dict())
+                self._fix_logger_config()
+                logging.config.dictConfig(self.__log_cfg)
+                self.__logger[self.project_name] = logging.getLogger(self.project_name)
             return True
         else:
             return False
@@ -131,6 +134,11 @@ class OngConfig:
                 cfg = loader(f_cfg)
                 return cfg
         return None
+
+    def create_default_config(self):
+        """Creates a config file with the contents of the current configuration"""
+        warnings.warn("The use of create_default_config() is deprecated, use save() instead", DeprecationWarning)
+        self.save()
 
     def save(self):
         """Saves current config to the config file self.config_filename"""
@@ -156,7 +164,7 @@ class OngConfig:
 
     @property
     def logger(self):
-        return self.__logger
+        return self.__logger.get(self.project_name, None)
 
     def config(self, item: str, default_value=_missing):
         """Checks for a parameter in the configuration, and raises exception if not found.
@@ -216,6 +224,14 @@ class OngConfig:
             self.save()
         else:
             raise ValueError(f"Item {item} already did not existed in app config.")
+
+    def close_handlers(self, remove_handlers: bool = True):
+        """Forces close of handlers, and also remove them if remove_handlers=True (default)"""
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            if remove_handlers:
+                self.logger.removeHandler(handler)
 
 
 def _default_logger_config(app_name: str):

@@ -173,6 +173,9 @@ class TestConfig(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
+        # Close handler loggers to allow deleting logging file
+        cls.cfg.close_handlers(remove_handlers=True)
+
         # Delete log file
         os.remove(cls.log_filename)
         cls.temp_dir.cleanup()
