@@ -15,13 +15,39 @@ import dateutil.tz
 LOCAL_TZ = dateutil.tz.tzlocal()
 
 
-def is_debugging() -> bool:
-    """Returns true if debugging"""
-    gettrace = sys.gettrace()
-    # Check for debugging, if so run debug server
-    if gettrace:
-        return True
-    return False
+class _BoolVariableFunction:
+    """Create an instance of this class with a boolean value and assign it to a variable.
+    The variable will evaluate to the given boolean, and so will do a functon call to the variable
+    Example: will print "False" in both cases
+        a = _BoolVariableFunction(False)
+        if a:
+            print("True")
+        else:
+            print("False")
+        if a():
+            print("True")
+        else:
+            print("False")
+    """
+
+    def __init__(self, value: bool):
+        self.value = value
+
+    def __bool__(self):
+        """To evaluate as a variable"""
+        return self.value
+
+    def __call__(self, *args, **kwargs):
+        """To evaluate as a function"""
+        return self.value
+
+    def __eq__(self, other):
+        """For comparisons"""
+        return self.value == other
+
+
+# Check for debugging, if so run debug server
+is_debugging = _BoolVariableFunction(True if sys.gettrace() else False)
 
 
 def to_list(value) -> list:
@@ -40,20 +66,20 @@ Functions to detect under which OS the code is running
 """
 
 
-def is_mac() -> bool:
-    """True if running in macos"""
-    return platform.system() == "Darwin"
+class _PlatformVariableFunction(_BoolVariableFunction):
+    def __init__(self, platform_name: str):
+        self.platform_name = platform_name
+        super().__init__(platform.system() == self.platform_name)
 
 
-def is_windows() -> bool:
-    """True if running Windows"""
-    return platform.system() == "Windows"
+"""True if running in macos"""
+is_mac = _PlatformVariableFunction("Darwin")
 
+"""True if running Windows"""
+is_windows = _PlatformVariableFunction("Windows")
 
-def is_linux() -> bool:
-    """True if running Linux"""
-    return platform.system() == "Linux"
-
+"""True if running Linux"""
+is_linux = _PlatformVariableFunction("Linux")
 
 """
 Functions to get current user and domain
