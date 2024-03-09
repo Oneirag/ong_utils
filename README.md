@@ -19,6 +19,7 @@ of the computer).
 * functions to get current user and domain. [Read more](#get-current-user-and-domain)
 * functions for simple input dialogs with validations using tk [Read more](#simple-dialogs)
 * a function `fix_windows_gui_scale` to avoid blurry tkinter text elements in Windows 10 or 11. [Read more](#fix-windows-scaling)
+* Handlers to redirect prints and logging to an Entry tkinter widget [Read more](#print-and-logging-tkinter-handlers)
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
 * functions to create desktop shortcuts for packages installed with pip. [Read more](#make-shortcuts-for-entry-points)
@@ -577,6 +578,36 @@ result = user_domain_password_dialog(title="your title goes here",
                                      )
 print(result)   # could be {} if user cancelled or a dict of "username", "domain", "password"
 ```
+
+## Print and logging tkinter handlers
+You can use `print2widget` and `log2widget` to redirect any `print` or log to an Entry tkinter widget. See the following example:
+````python
+import tkinter as tk
+import logging
+from ong_utils import print2widget, logger2widget
+
+class Simple:
+    def __init__(self, title: str = "Simple logger"):
+        self.root = tk.Tk()
+        self.title = title
+        
+        self.root.title(self.title)
+
+        # Central area for logs
+        self.text_area = tk.Text(self.root, font=("Arial", 12))
+        self.text_area.pack(fill='both', expand=True)
+        # Redirects all prints from now onwards to text_area
+        print2widget(self.text_area)
+        self.logger = logging.getLogger(__name__)
+        logger2widget(self.logger, self.text_area)
+        
+if __name__ == '__main__':
+    app = Simple()
+    app.root.mainloop()
+    """Any call to print() or logger.info() will be shown in app.text_area"""
+ 
+````
+
 ## Fix windows scaling
 As answered in [https://stackoverflow.com/a/43046744](https://stackoverflow.com/a/43046744), in Windows 10 or 11, tk applications texts look blurry, such as:
 
