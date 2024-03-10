@@ -23,6 +23,7 @@ from ong_utils.utils import (LOCAL_TZ, is_debugging, to_list, is_mac, is_linux, 
 from ong_utils.web import find_available_port
 from ong_utils.sensitivity_labels import SensitivityLabel
 from ong_utils.ui import simple_dialog, user_domain_password_dialog, fix_windows_gui_scale
+from ong_utils.ui_logging_utils import print2widget, logger2widget
 
 
 import_excepts = (ModuleNotFoundError, NameError, AdditionalRequirementException)

@@ -19,6 +19,7 @@ of the computer).
 * functions to get current user and domain. [Read more](#get-current-user-and-domain)
 * functions for simple input dialogs with validations using tk [Read more](#simple-dialogs)
 * a function `fix_windows_gui_scale` to avoid blurry tkinter text elements in Windows 10 or 11. [Read more](#fix-windows-scaling)
+* Handlers to redirect prints and logging to an Entry tkinter widget [Read more](#print-and-logging-tkinter-handlers)
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
 * functions to create desktop shortcuts for packages installed with pip. [Read more](#make-shortcuts-for-entry-points)
@@ -55,6 +56,42 @@ local_now = pd.Timestamp.now(tz=LOCAL_TZ)
 res = http.request("GET", config('url'))
 logger.info("Sample log")
 ```
+### Advanced usage
+Default values can be supplied, so a new file is created with the default values if it does not exist previously
+```python
+from ong_utils import OngConfig
+# The following code will create the config file with given default values and
+# will also raise an exception to stop the program so the user can review the file
+default_app_values = dict(a_kew=a_value)
+cfg = OngConfig(default_app_cfg=default_app_values)
+
+# The following code will create the config file with given default values and
+# but won't raise any exception, so the process will continue
+# This approach is usefull when the default values can be used without further edition
+default_app_values = dict(a_kew=a_value)
+cfg = OngConfig(default_app_cfg=default_app_values, 
+                write_default_file=True)
+
+```
+Values could be updated and writen to the config file during the execution of the code
+
+```python
+from ong_utils import OngConfig
+
+# Assume file already exists
+cfg = OngConfig("app_name")
+...
+# Add a new key and saves the config file. If the key existed, raises ValueError
+cfg.add_app_config("new key", "new value")
+print(cfg.config("new key"))  # Will print new value
+# Updates an existing key and saves in the config file. If the key did not exist, raises ValueError
+cfg.update_app_config("new key", "new value")
+print(cfg.config("new key"))  # Will print new value
+
+
+```
+
+
 
 ## Configuration files
 Config files are yaml/json files located (by default) in `~/.config/ongpi/{project_name}.{extension}`. 
@@ -541,6 +578,74 @@ result = user_domain_password_dialog(title="your title goes here",
                                      )
 print(result)   # could be {} if user cancelled or a dict of "username", "domain", "password"
 ```
+## Selecting folders, files and viewing passwords
+Use the `button` property of the `UiField` to allow selecting files, folders and viewing passwords, by creating a button 
+to the right of the entry fields: 
+* Add a `UiFileButton()` to select and validate for exiting files
+* Add a `UiFolderButton()` to select and validate for exiting folders
+* Add a `UiPasswordButton()` to a password field to show or hide passwords
+See the code bellow for this example:
+![dialog_buttons_win.png](img%2Fdialog_buttons_win.png)
+````python
+from ong_utils import simple_dialog
+from ong_utils.ui import UiField, UiFileButton, UiPasswordButton, UiFolderButton
+field_list = [UiField(name="domain",  # Key of the dict in the return dictionary and for validation functions
+                      label="Domain",  # Name to the shown for the user
+                      default_value="fake domain",  # Default value to be used
+                      editable=False  # Not editable
+                      ),
+              UiField(name="username", label="User", default_value="fake user",
+                      editable=False,
+                      ),
+              UiField(name="password", label="Password", default_value="",
+                      show="*",  # Hides password by replacing with *
+                      # validation_func=verify_credentials
+                      # The validation function receives values of all fields, so should accept extra **kwargs
+                      button=UiPasswordButton()
+                      ),
+              UiField(name="server", label="Server",
+                      width=40),
+              # Will ask for a folder and validate that exists
+              UiField(name="folder", label="Folder", button=UiFolderButton(), width=80),
+              # Will ask for a file and validate that exists
+              UiField(name="file", label="File", button=UiFileButton(), width=90),
+              ]
+# Call the function to open the login window with custom options
+res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
+                    field_list=field_list)
+print(res)
+
+````
+
+## Print and logging tkinter handlers
+You can use `print2widget` and `log2widget` to redirect any `print` or log to an Entry tkinter widget. See the following example:
+````python
+import tkinter as tk
+import logging
+from ong_utils import print2widget, logger2widget
+
+class Simple:
+    def __init__(self, title: str = "Simple logger"):
+        self.root = tk.Tk()
+        self.title = title
+        
+        self.root.title(self.title)
+
+        # Central area for logs
+        self.text_area = tk.Text(self.root, font=("Arial", 12))
+        self.text_area.pack(fill='both', expand=True)
+        # Redirects all prints from now onwards to text_area
+        print2widget(self.text_area)
+        self.logger = logging.getLogger(__name__)
+        logger2widget(self.logger, self.text_area)
+        
+if __name__ == '__main__':
+    app = Simple()
+    app.root.mainloop()
+    """Any call to print() or logger.info() will be shown in app.text_area"""
+ 
+````
+
 ## Fix windows scaling
 As answered in [https://stackoverflow.com/a/43046744](https://stackoverflow.com/a/43046744), in Windows 10 or 11, tk applications texts look blurry, such as:
 
