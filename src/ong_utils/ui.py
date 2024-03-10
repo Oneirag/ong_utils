@@ -1,12 +1,18 @@
 """
 Simple ui screens
 """
+from __future__ import annotations
+
+import abc
 import gettext
 import locale
+import os.path
 from dataclasses import dataclass
-from tkinter import ttk, messagebox
+from tkinter import filedialog
+from tkinter import ttk, messagebox, END
 from tkinter.simpledialog import Dialog
 from typing import List, Callable
+from functools import partial
 
 from ong_utils import is_windows
 # from ong_utils.credentials import verify_credentials
@@ -36,6 +42,72 @@ _STATE_ENABLED = "normal"
 _STATE_DISABLED = "disabled"  # 'readonly' could also work
 
 
+class _UiBaseButton:
+    @abc.abstractmethod
+    def button_name(self) -> str | None:
+        return None
+
+    @abc.abstractmethod
+    def button_command(self, entry: ttk.Entry):
+        """What to do when button is pressed. Receives an entry which is the one that has the attached info"""
+        pass
+
+    def make_button(self, master, entry: ttk.Entry) -> ttk.Button:
+        return ttk.Button(master, text=self.button_name(), command=self.button_command(entry=entry))
+
+    @abc.abstractmethod
+    def validate(self, value: str) -> bool:
+        """Validates the button"""
+        return True
+
+
+class UiFolderButton(_UiBaseButton):
+    def button_name(self) -> str | None:
+        return "..."
+
+    def button_command(self, entry: ttk.Entry):
+        folder_selected = filedialog.askdirectory(initialdir=entry.get(), title="Selecciona una carpeta")
+        if folder_selected:
+            entry.delete(0, END)
+            entry.insert(0, folder_selected)
+
+    def validate(self, value: str) -> bool:
+        return os.path.isdir(value)
+
+
+class UiFileButton(_UiBaseButton):
+    def button_name(self) -> str | None:
+        return "..."
+
+    def button_command(self, entry: ttk.Entry):
+        file_selected = filedialog.askopenfilename(initialdir=entry.get(), title="Selecciona un fichero")
+        if file_selected:
+            entry.delete(0, END)
+            entry.insert(0, file_selected)
+
+    def validate(self, value: str) -> bool:
+        return os.path.isfile(value)
+
+
+class UiPasswordButton(_UiBaseButton):
+    view = True
+    show = None
+
+    def button_name(self) -> str | None:
+        return "Ver"
+
+    def button_command(self, entry: ttk.Entry):
+        if self.view:
+            self.show = entry.cget("show")
+            entry.configure(show="")
+        else:
+            entry.configure(show=self.show)
+        self.view = not self.view
+
+    def validate(self, value: str) -> bool:
+        return True
+
+
 @dataclass
 class UiField:
     name: str  # Name of the field (for internal code)
@@ -48,11 +120,24 @@ class UiField:
     editable: bool = True
     # Width parameter of an Entry field, make it longer if needed
     width: int = 20
+    # Include an additional Button
+    button: _UiBaseButton = None
 
     @property
     def state(self):
         """Turns editable into the string state parameter of the tk.Entry"""
         return _STATE_ENABLED if self.editable else _STATE_DISABLED
+
+
+class _UiFieldButton(UiField):
+    @abc.abstractmethod
+    def button_command(self, entry: ttk.Entry):
+        print("Executing parent command")
+        pass
+
+    @abc.abstractmethod
+    def button_name(self) -> str:
+        pass
 
 
 class _SimpleDialog(Dialog):
@@ -79,6 +164,10 @@ class _SimpleDialog(Dialog):
                 # entry.configure(state='readonly')
                 entry.configure(state=_STATE_DISABLED)
             entry.grid(row=row + 1, column=1, pady=5, padx=(10, 10), sticky="w")
+            if field.button:
+                btn = ttk.Button(master, text=field.button.button_name(),
+                                 command=partial(field.button.button_command, entry=entry))
+                btn.grid(row=row + 1, column=1, pady=5, padx=(0, 10), sticky="e")
             self.ui_fields[field.name] = entry
             focus = entry
         return focus
@@ -88,10 +177,10 @@ class _SimpleDialog(Dialog):
         try:
             self.update_values()
             for field in self.field_list:
-                if field.validation_func:
-                    if not field.validation_func(**self.__values):
-                        messagebox.showerror(_("Error"), _("Invalid field") + ": " + _(field.label))
-                        return 0
+                if ((field.validation_func and not field.validation_func(**self.__values)) or
+                        field.button and not field.button.validate(self.__values[field.name])):
+                    messagebox.showerror(_("Error"), _("Invalid field") + ": " + _(field.label))
+                    return 0
             self.validated = True
             return 1
         except Exception as e:
@@ -158,7 +247,7 @@ def user_domain_password_dialog(title: str, description: str, validate_password:
 
 if __name__ == '__main__':
     # from ong_utils import simple_dialog
-    # from ong_utils.ui import UiField
+    # from ong_utils.ui import UiField, UiFileButton, UiPasswordButton, UiFolderButton
 
     field_list = [UiField(name="domain",  # Key of the dict in the return dictionary and for validation functions
                           label="Domain",  # Name to the shown for the user
@@ -172,9 +261,14 @@ if __name__ == '__main__':
                           show="*",  # Hides password by replacing with *
                           # validation_func=verify_credentials
                           # The validation function receives values of all fields, so should accept extra **kwargs
+                          button=UiPasswordButton()
                           ),
                   UiField(name="server", label="Server",
-                          width=40)  # Use width parameter to make entry longer
+                          width=40),
+                  # Will ask for a folder and validate that exists
+                  UiField(name="folder", label="Folder", button=UiFolderButton(), width=80),
+                  # Will ask for a file and validate that exists
+                  UiField(name="file", label="File", button=UiFileButton(), width=90),
                   ]
     # Call the function to open the login window with custom options
     res = simple_dialog(title="Sample form", description="Show descriptive message for the user",

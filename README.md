@@ -578,6 +578,44 @@ result = user_domain_password_dialog(title="your title goes here",
                                      )
 print(result)   # could be {} if user cancelled or a dict of "username", "domain", "password"
 ```
+## Selecting folders, files and viewing passwords
+Use the `button` property of the `UiField` to allow selecting files, folders and viewing passwords, by creating a button 
+to the right of the entry fields: 
+* Add a `UiFileButton()` to select and validate for exiting files
+* Add a `UiFolderButton()` to select and validate for exiting folders
+* Add a `UiPasswordButton()` to a password field to show or hide passwords
+See the code bellow for this example:
+![dialog_buttons_win.png](img%2Fdialog_buttons_win.png)
+````python
+from ong_utils import simple_dialog
+from ong_utils.ui import UiField, UiFileButton, UiPasswordButton, UiFolderButton
+field_list = [UiField(name="domain",  # Key of the dict in the return dictionary and for validation functions
+                      label="Domain",  # Name to the shown for the user
+                      default_value="fake domain",  # Default value to be used
+                      editable=False  # Not editable
+                      ),
+              UiField(name="username", label="User", default_value="fake user",
+                      editable=False,
+                      ),
+              UiField(name="password", label="Password", default_value="",
+                      show="*",  # Hides password by replacing with *
+                      # validation_func=verify_credentials
+                      # The validation function receives values of all fields, so should accept extra **kwargs
+                      button=UiPasswordButton()
+                      ),
+              UiField(name="server", label="Server",
+                      width=40),
+              # Will ask for a folder and validate that exists
+              UiField(name="folder", label="Folder", button=UiFolderButton(), width=80),
+              # Will ask for a file and validate that exists
+              UiField(name="file", label="File", button=UiFileButton(), width=90),
+              ]
+# Call the function to open the login window with custom options
+res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
+                    field_list=field_list)
+print(res)
+
+````
 
 ## Print and logging tkinter handlers
 You can use `print2widget` and `log2widget` to redirect any `print` or log to an Entry tkinter widget. See the following example:
