@@ -15,7 +15,7 @@ of the computer).
 * a `get_cookies` function to extract a dict of cookies from a response of a urllib3 request. [Read more](#urllib3-utils)
 * a class to store any data into keyring (e.g. strings, dicts...). [Read more](#storing-long-data-in-keyring)
 * functions to parse html pages and extract javascript variables (such as CSRF tokens or links). [Read more](#parsing-html-pages)
-* Class to read/apply sensitivity labels to a file (Public, Internal...) [Read more](#add-sensitivy-labels-to-office-files)
+* Class to read/apply sensitivity labels to a file (Public, Internal...) [Read more](#add-sensitivy-labels-to-office-files). It is adapated from https://github.com/brunomsantiago/mip_python
 * functions to get current user and domain. [Read more](#get-current-user-and-domain)
 * functions for simple input dialogs with validations using tk [Read more](#simple-dialogs)
 * a function `fix_windows_gui_scale` to avoid blurry tkinter text elements in Windows 10 or 11. [Read more](#fix-windows-scaling)
