@@ -21,7 +21,6 @@ from ong_utils.urllib3_utils import create_pool_manager, cookies2header, get_coo
 from ong_utils.utils import (LOCAL_TZ, is_debugging, to_list, is_mac, is_linux, is_windows, get_current_user,
                              get_current_domain)
 from ong_utils.web import find_available_port
-from ong_utils.sensitivity_labels import SensitivityLabel
 from ong_utils.ui import simple_dialog, user_domain_password_dialog, fix_windows_gui_scale
 from ong_utils.ui_logging_utils import print2widget, logger2widget
 
@@ -29,6 +28,7 @@ from ong_utils.ui_logging_utils import print2widget, logger2widget
 import_excepts = (ModuleNotFoundError, NameError, AdditionalRequirementException)
 try:
     from ong_utils.excel import df_to_excel
+    from ong_utils.sensitivity_labels import SensitivityLabel
 except import_excepts:
     df_to_excel = raise_extra_install("xlsx")
 try:

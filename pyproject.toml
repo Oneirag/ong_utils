@@ -1,6 +1,6 @@
 [project]
 name = "ong_utils"
-version = "0.6.4"
+version = "0.6.5"
 # license = {file = "LICENSE.txt"}
 authors = [
     { email = "oneirag@yahoo.es", name = "Oscar Neira" }
