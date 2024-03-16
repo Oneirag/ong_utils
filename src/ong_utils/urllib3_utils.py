@@ -13,6 +13,7 @@ req.http.request("get", url, headers=headers)       # Using cookies from previou
 
 from http.cookiejar import CookieJar
 from urllib.request import Request
+from urllib3.response import HTTPResponse
 
 import certifi
 import urllib3.contrib.pyopenssl
@@ -51,9 +52,19 @@ def cookies2header(cookies: dict) -> dict:
     return dict(Cookie="; ".join(f"{k}={v}" for k, v in cookies.items()))
 
 
-def get_cookies(resp) -> dict:
+def get_cookies(resp: HTTPResponse, request: Request = None) -> dict:
     """Gets cookies from response of an urllib3 function (request, urlopen)"""
     cj = CookieJar()
-    cks = cj.make_cookies(resp, Request(resp.geturl()))
+    if request is None:
+        try:
+            url = resp.geturl()
+            request = request or Request(url)
+        except ValueError:
+            # Not a valid url, fix it getting host address from pool (if any)
+            if pool := getattr(resp, "_pool"):
+                request = Request(f"{pool.scheme}://{pool.host}:{pool.port}{resp.geturl()}")
+            else:
+                raise
+    cks = cj.make_cookies(resp, request)
     cookies = {c.name: c.value for c in cks}
     return cookies
