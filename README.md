@@ -546,7 +546,19 @@ field_list = [UiField(name="domain",        # Key of the dict in the return dict
                       ),
               UiField(name="server", label="Server",
                       width=40      # Use width parameter to make this Entry field longer. Use it in all to make all fields longer
-                      )]
+                      ),
+              # This shows a combo box with values Yes and No, selecting Yes as default
+              UiField(name="combo", label="Select one",
+                      valid_values=['Yes', "No"],
+                      default_value="Yes",
+                      ),
+              # This shows an entry field to select a File, but  allows empty values (returns "")
+              UiField(name="file", label="Select File",
+                      allow_empy=True,
+                      button=UiFileButton()
+                      ),
+              
+              ]
 # Call the function to open the login window with custom options
 res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
                    field_list=field_list)
@@ -601,7 +613,7 @@ field_list = [UiField(name="domain",  # Key of the dict in the return dictionary
                       show="*",  # Hides password by replacing with *
                       # validation_func=verify_credentials
                       # The validation function receives values of all fields, so should accept extra **kwargs
-                      button=UiPasswordButton()
+                      button=UiPasswordButton(),
                       ),
               UiField(name="server", label="Server",
                       width=40),
@@ -609,6 +621,9 @@ field_list = [UiField(name="domain",  # Key of the dict in the return dictionary
               UiField(name="folder", label="Folder", button=UiFolderButton(), width=80),
               # Will ask for a file and validate that exists
               UiField(name="file", label="File", button=UiFileButton(), width=90),
+              # Will ask for a file and validate that exists. If field is empty does not validate it and returns ""
+              UiField(name="empty_file", label="File (empty)", button=UiFileButton(), width=90,
+                      allow_empy=True),
               ]
 # Call the function to open the login window with custom options
 res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
