@@ -43,6 +43,7 @@ _STATE_DISABLED = "disabled"  # 'readonly' could also work
 
 
 class _UiBaseButton:
+    """Base class for buttons added to a simple dialog (for selecting files or folders, showing passwords...)"""
     @abc.abstractmethod
     def button_name(self) -> str | None:
         return None
@@ -62,11 +63,14 @@ class _UiBaseButton:
 
 
 class UiFolderButton(_UiBaseButton):
+    """Defines a button for browsing for a folder and update entry field accordingly. It also validates
+    that the contents of the field is a valid existing folder"""
     def button_name(self) -> str | None:
         return "..."
 
     def button_command(self, entry: ttk.Entry):
-        folder_selected = filedialog.askdirectory(initialdir=entry.get(), title="Selecciona una carpeta")
+        folder_selected = filedialog.askdirectory(initialdir=entry.get(),
+                                                  title=_("Select folder"))
         if folder_selected:
             entry.delete(0, END)
             entry.insert(0, folder_selected)
@@ -76,11 +80,15 @@ class UiFolderButton(_UiBaseButton):
 
 
 class UiFileButton(_UiBaseButton):
+    """Defines a button for browsing for a file and update entry field accordingly. It also validates
+    that the contents of the field is a valid existing file"""
+
     def button_name(self) -> str | None:
         return "..."
 
     def button_command(self, entry: ttk.Entry):
-        file_selected = filedialog.askopenfilename(initialdir=entry.get(), title="Selecciona un fichero")
+        file_selected = filedialog.askopenfilename(initialdir=entry.get(),
+                                                   title=_("Select file"))
         if file_selected:
             entry.delete(0, END)
             entry.insert(0, file_selected)
@@ -90,6 +98,8 @@ class UiFileButton(_UiBaseButton):
 
 
 class UiPasswordButton(_UiBaseButton):
+    """Defines a button for showing/hiding passwords. Does not add additional validations"""
+
     view = True
     show = None
 
@@ -122,6 +132,10 @@ class UiField:
     width: int = 20
     # Include an additional Button
     button: _UiBaseButton = None
+    # True to avoid validation when field is empty (defaults to False)
+    allow_empy: bool = False
+    # Optional list of valid values. If supplied, a ComboBox is used instead of an Entry Field
+    valid_values: List[str] = None
 
     @property
     def state(self):
@@ -158,8 +172,14 @@ class _SimpleDialog(Dialog):
             # Label and entry for the username
             label = ttk.Label(master, text=_(field.label))
             label.grid(row=row + 1, column=0, pady=5, padx=10, sticky="w")
-            entry = ttk.Entry(master, show=field.show, width=field.width)
-            entry.insert(0, field.default_value)
+            if field.valid_values:
+                entry = ttk.Combobox(master, show=field.show, width=field.width,
+                                     values=field.valid_values)
+                if field.default_value in field.valid_values:
+                    entry.set(field.default_value)
+            else:
+                entry = ttk.Entry(master, show=field.show, width=field.width)
+                entry.insert(0, field.default_value)
             if not field.editable:
                 # entry.configure(state='readonly')
                 entry.configure(state=_STATE_DISABLED)
@@ -177,6 +197,9 @@ class _SimpleDialog(Dialog):
         try:
             self.update_values()
             for field in self.field_list:
+                # Do not validate if field is empty and allow_empty = True
+                if field.allow_empy and not self.__values[field.name]:
+                    continue
                 if ((field.validation_func and not field.validation_func(**self.__values)) or
                         field.button and not field.button.validate(self.__values[field.name])):
                     messagebox.showerror(_("Error"), _("Invalid field") + ": " + _(field.label))
@@ -212,6 +235,30 @@ def simple_dialog(title: str, description: str, field_list: List[UiField], paren
                           validation_func=verify_credentials),
                   UiField(name="server", label="Servidor")]
         result = dialog(title, description, field_list)
+
+    Use the UiPasswordButton, UiFolderButton or UiFileButton as the button parameter to add a button
+    to show password or to select and validate files or folders, such as here:
+         field_list = [UiField(name="domain",  # Key of the dict in the return dictionary and for validation functions
+                          label="Domain",  # Name to the shown for the user
+                          default_value="fake domain",  # Default value to be used
+                          editable=False  # Not editable
+                          ),
+                  UiField(name="username", label="User", default_value="fake user",
+                          editable=False,
+                          ),
+                  UiField(name="password", label="Password", default_value="",
+                          show="*",  # Hides password by replacing with *
+                          # validation_func=verify_credentials
+                          # The validation function receives values of all fields, so should accept extra **kwargs
+                          button=UiPasswordButton()
+                          ),
+                  UiField(name="server", label="Server",
+                          width=40),
+                  # Will ask for a folder and validate that exists
+                  UiField(name="folder", label="Folder", button=UiFolderButton(), width=80),
+                  # Will ask for a file and validate that exists
+                  UiField(name="file", label="File", button=UiFileButton(), width=90),
+                  ]
     """
     win = _SimpleDialog(title, description, field_list, parent=parent)
     return win.return_values
@@ -232,6 +279,8 @@ def user_domain_password_dialog(title: str, description: str, validate_password:
     or an empty dict if user cancelled
     """
     default_values = default_values or dict()
+    bullet = "\u2022"  # specifies bullet character
+
     field_list = [UiField(name="domain", label="Domain",
                           default_value=default_values.get("domain", get_current_domain()),
                           editable=False),
@@ -240,7 +289,7 @@ def user_domain_password_dialog(title: str, description: str, validate_password:
                           editable=False),
                   UiField(name="password", label="Password",
                           default_value=default_values.get("password", ""),
-                          show="*",
+                          show=bullet,
                           validation_func=validate_password)]
     return simple_dialog(title, description, field_list, parent=parent)
 
@@ -280,6 +329,12 @@ if __name__ == '__main__':
                                       default_values=dict(username="fake user", domain="fake domain",
                                                           password="fake password"))
     print(res)
-    # print(tkinter.simpledialog.askstring(title="hola", prompt="di algo",
-    #                                      initialvalue="respuesta de ejemplo"))
-    # print(tkinter.messagebox.askyesno(title="Hola", message="Dime si o no"))
+
+    res = simple_dialog("Un titulo",
+                        "una Descripcion",
+                        field_list=
+                        [
+                            UiField(name="a", label="A", allow_empy=True, button=UiFileButton()),
+                            UiField(name="b", label="B", default_value="Si", valid_values=['Si', 'No'])
+                        ])
+    print(res)
