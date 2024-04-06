@@ -15,7 +15,7 @@ from tkinter import ttk, messagebox, END, Toplevel
 from tkinter.simpledialog import Dialog
 from typing import List, Callable
 
-from ong_utils import is_windows
+from ong_utils import is_windows, is_mac
 from ong_utils.credentials import verify_credentials
 from ong_utils.utils import get_current_user, get_current_domain
 
@@ -207,8 +207,13 @@ class _SimpleDialog(Dialog):
         self.validated = False
         self.focus_field = focus_field
         self.tooltip = None
-        parent = parent or Tk()  # _get_default_root does not work properly
-        Dialog.__init__(self, parent, title)
+        self.parent = parent
+        if not self.parent and is_mac:
+            # In mac parent window is not properly created
+            self.parent = Tk()
+            self.parent.withdraw()
+        super().__init__(self.parent, title)
+
 
     # def show_tooltip(self, widget, text: str, event=None, **kwargs, *args):
     def show_tooltip(self, event=None):
@@ -247,8 +252,9 @@ class _SimpleDialog(Dialog):
                     entry = ttk.Checkbutton(master, width=field.width,
                                             onvalue=True, offvalue=False,
                                             variable=self.variables[field.name])
-                    if not field.default_value:
-                        entry.deselect()
+                    # Invoke it twice to leave it in its expected value in macos
+                    entry.invoke()
+                    entry.invoke()
                 else:
                     entry = ttk.Combobox(master, show=field.show, width=field.width,
                                          values=field.valid_values,
