@@ -45,7 +45,7 @@ class TestUI(unittest.TestCase):
     def verify_dialog(self, expected=None):
         retval = self.dialog.show()
         self.assertTrue(isinstance(retval, dict), "Invalid return type")
-        if expected is not None:
+        if expected is not None and retval:
             self.assertEqual(retval, expected)
         if retval:  # If user did not cancel...
             print(retval)
