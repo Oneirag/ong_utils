@@ -39,7 +39,7 @@ def df_to_excel(df: pd.DataFrame, writer: pd.ExcelWriter, sheet_name: str, index
     for column, xls_column in zip(df, columns):
         column_length = max(df[column].astype(str).map(len).max(), len(str(column)))
         column_length = max(column_length, len(str(column)))  # Include headers in calculation
-        ws.column_dimensions[xls_column[0].column_letter].set_width = column_length
+        ws.column_dimensions[xls_column[0].column_letter].width = column_length
 
     if add_table:
         # Add a default style with striped rows and banded columns

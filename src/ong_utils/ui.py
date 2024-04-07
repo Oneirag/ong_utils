@@ -10,14 +10,14 @@ import os.path
 import warnings
 from dataclasses import dataclass
 from functools import partial
-from tkinter import filedialog, StringVar, BooleanVar, Tk
+from tkinter import filedialog
 from tkinter import ttk, messagebox, END, Toplevel
 from tkinter.simpledialog import Dialog
 from typing import List, Callable
 
-from ong_utils import is_windows, is_mac
+from ong_utils.utils import get_current_domain, get_current_user
 from ong_utils.credentials import verify_credentials
-from ong_utils.utils import get_current_user, get_current_domain
+from ong_utils import is_windows, AdditionalRequirementException
 
 
 def fix_windows_gui_scale():
@@ -208,15 +208,10 @@ class _SimpleDialog(Dialog):
         self.focus_field = focus_field
         self.tooltip = None
         self.parent = parent
-        if not self.parent and is_mac:
-            # In mac parent window is not properly created
-            self.parent = Tk()
-            self.parent.withdraw()
         super().__init__(self.parent, title)
 
-
-    # def show_tooltip(self, widget, text: str, event=None, **kwargs, *args):
     def show_tooltip(self, event=None):
+        """Shows a tooltip with the field.description content. Widget is received from event.widget"""
         widget = event.widget
         field = list(field for f, field in zip(self.ui_fields.values(), self.field_list)
                      if f is widget)[0]
@@ -245,25 +240,44 @@ class _SimpleDialog(Dialog):
             # Label and entry for the username
             label = ttk.Label(master, text=_(field.label))
             label.grid(row=row + 1, column=0, pady=5, padx=10, sticky="w")
-            self.variables[field.name] = StringVar(value=field.default_value)
             if field.valid_values:
                 if field.is_boolean:
-                    self.variables[field.name] = BooleanVar(value=field.default_value)
+                    """
+                    Checkbutton does not work properly, so a workaround is made here
+                    Works nice with BooleanVar but that does not work when parent=None
+                    Here works without variables: uses an internal boolean that changes
+                    when toggling and creates a fake get() function to work as the rest
+                    of the ttk elements
+                    """
                     entry = ttk.Checkbutton(master, width=field.width,
                                             onvalue=True, offvalue=False,
-                                            variable=self.variables[field.name])
-                    # Invoke it twice to leave it in its expected value in macos
+                                            text="",  # To disable text box in windows
+                                            )
+                    # get function does not exit, inject it
+                    entry.bool = field.default_value
+                    entry.state([("" if entry.bool else "!") + "selected !alternate"])
                     entry.invoke()
                     entry.invoke()
+
+                    def toggle(cb: ttk.Checkbutton):
+                        cb.bool = not cb.bool
+                        print(f"toggled to {cb.bool}")
+
+                    entry.configure(command=partial(toggle, cb=entry))
+                    entry.get = lambda: entry.bool
+
                 else:
                     entry = ttk.Combobox(master, show=field.show, width=field.width,
                                          values=field.valid_values,
-                                         textvariable=self.variables[field.name])
+                                         # textvariable=self.variables[field.name]
+                                         )
                     if field.default_value in field.valid_values:
                         entry.set(field.default_value)
             else:
                 entry = ttk.Entry(master, show=field.show, width=field.width,
-                                  textvariable=self.variables[field.name])
+                                  #textvariable=self.variables[field.name]
+                                  )
+                entry.insert(0, field.default_value)
             if not field.editable:
                 # entry.configure(state='readonly')
                 entry.configure(state=_STATE_DISABLED)
@@ -290,10 +304,15 @@ class _SimpleDialog(Dialog):
                 # Do not validate if field is empty and allow_empty = True
                 if field.allow_empy and not self.__values[field.name]:
                     continue
-                if ((field.validation_func and not field.validation_func(**self.__values)) or
-                        field.button and not field.button.validate(self.__values[field.name])):
-                    messagebox.showerror(_("Error"), _("Invalid field") + ": " + _(field.label))
-                    return 0
+                try:
+                    if ((field.validation_func and not field.validation_func(**self.__values)) or
+                            field.button and not field.button.validate(self.__values[field.name])):
+                        messagebox.showerror(_("Error"), _("Invalid field") + ": " + _(field.label))
+                        return 0
+                except AdditionalRequirementException as are:
+                    messagebox.showerror(_("Error"), _("Additional requirements for validating field") + f": {are}")
+                except Exception as e:
+                    messagebox.showerror(_("Error"),f"{e}")
             self.validated = True
             return 1
         except Exception as e:
@@ -302,8 +321,8 @@ class _SimpleDialog(Dialog):
 
     def update_values(self):
         for field in self.field_list:
-            self.__values[field.name] = self.variables.get(field.name).get() if field.name in self.variables else None
-            # self.__values[field.name] = self.ui_fields.get(field.name).get() if field.name in self.ui_fields else None
+            # self.__values[field.name] = self.variables.get(field.name).get() if field.name in self.variables else None
+            self.__values[field.name] = self.ui_fields.get(field.name).get() if field.name in self.ui_fields else None
 
     @property
     def return_values(self) -> dict:
@@ -334,19 +353,30 @@ class OngFormDialog:
         self.title = title
         self.description = description
         self.parent = parent
-        self.dict_ui_fields = dict()
+        self.dict_ui_fields = None
         self.focus_field = None
+        self.clear()
 
-    def __update_last_field(self, property, value):
+    def __get_uifield(self, field_name: str) -> UiField | None:
+        """Returns a UiField. if field_name is None, returns the last one. If no fields, return None"""
+        last_field = None
+        if self.dict_ui_fields:
+            if field_name is None or field_name not in self.dict_ui_fields:
+                last_field = list(self.dict_ui_fields.values())[-1]
+            else:
+                last_field = self.dict_ui_fields[field_name]
+        return last_field
+
+    def __update_uifield(self, field_name: str | None, property: str, value):
         if not self.dict_ui_fields:
             return
-        last_field = list(self.dict_ui_fields.values())[-1]
+        last_field = self.__get_uifield(field_name)
         setattr(last_field, property, value)
 
-    def __append_field(self, field: UiField):
-        if field.name in self.dict_ui_fields:
-            raise ValueError(f"Duplicated field name: {field.name}")
-        self.dict_ui_fields[field.name] = field
+    def __append_uifield(self, uifield: UiField):
+        if uifield.name in self.dict_ui_fields:
+            raise ValueError(f"Duplicated field name: {uifield.name}")
+        self.dict_ui_fields[uifield.name] = uifield
 
     def add_domain_field(self, default_value: str = None,
                          editable: bool = False):
@@ -373,10 +403,10 @@ class OngFormDialog:
         label = "Password"
         self.add_entry_field(name=name, label=label, default_value=default_value, editable=True)
         bullet = "\u2022"  # specifies bullet character
-        self.__update_last_field("show", bullet)
+        self.__update_uifield(None, "show", bullet)
         self.__set_button(UiPasswordButton())
         if validate_os:
-            self.__update_last_field("validation_func", verify_credentials)
+            self.__update_uifield(None,"validation_func", verify_credentials)
         return self
 
     def add_domain_user_password(self, default_domain: str = None, default_user: str = None,
@@ -391,79 +421,109 @@ class OngFormDialog:
         return self
 
     def add_file_field(self, name: str, label: str, default_value: str = None, filetypes: list = None,
-                       empty_ok: bool = False, description: str = None, width: int = 70):
+                       empty_ok: bool = False, width: int = 70):
         """adds a field to select a file, including a button to navigate files"""
-        self.add_entry_field(name=name, label=label, default_value=default_value, editable=True,
-                             description=description)
+        self.add_entry_field(name=name, label=label, default_value=default_value, editable=True)
         self.set_width(width)
         self.__set_button(UiFileButton(empty_ok=empty_ok, filetypes=filetypes))
         return self
 
     def add_folder_field(self, name: str, label: str, default_value: str = None,
-                         empty_ok: bool = False, description: str = None, width: int = 70):
+                         empty_ok: bool = False, width: int = 70):
         """adds a field to select a folder, including a button to navigate folders"""
-        self.add_entry_field(name=name, label=label, default_value=default_value, editable=True,
-                             description=description)
+        self.add_entry_field(name=name, label=label, default_value=default_value, editable=True)
         self.set_width(width)
         self.__set_button(UiFolderButton(empty_ok=empty_ok))
         return self
 
     def add_combo_field(self, name: str, label: str, valid_values: list, default_value: str = None,
-                        editable: bool = True, description: str = None):
+                        editable: bool = True):
         """Creates a combo box, with the list of strings for valid values and the default
         value. If default value not in valid_values, the first value will be used"""
         if default_value not in valid_values:
             default_value = valid_values[0]
         field = UiField(name=name, label=label, default_value=default_value,
                         valid_values=valid_values,
-                        editable=editable, description=description)
-        self.__append_field(field)
+                        editable=editable)
+        self.__append_uifield(field)
+        return self
 
     def add_boolean_field(self, name: str, label: str, default_value: bool = True,
-                          editable: bool = True, description: str = None):
+                          editable: bool = True):
         """Creates a combo field with two values (true/false), that is evaluated as boolean"""
         self.add_combo_field(name, label, valid_values=[True, False], default_value=default_value,
-                             description=description, editable=editable)
+                             editable=editable)
+        return self
 
     def add_entry_field(self, name: str, label: str, default_value: str = "",
-                        editable: bool = True, description: str = None):
+                        editable: bool = True):
         """
         Adds a simple entry field for strings, with no validations
         :param name: the name of the field in the return dictionary
         :param label: the label to be shown in the field
         :param default_value: default value (a string). Defaults to empty string
         :param editable: True (default) to make the field editable
-        :param description: a tooltip to be shown in the dialog
         :return: self to chain
         """
         field = UiField(name=name, label=label, default_value=default_value or "",
-                        editable=editable, description=description)
-        self.__append_field(field)
+                        editable=editable)
+        self.__append_uifield(field)
         return self
 
-    def set_validation(self, validation_func):
+    def set_show(self, show: str, field_name: str = None):
+        """Changes the show property of a ui element"""
+        self.__update_uifield(field_name, "show", show)
+        return self
+
+    def set_tooltip(self, tooltip: str, field_name: str = None):
+        """Defines a tooltip message for the given element (defaults to last one)"""
+        self.__update_uifield(field_name, "description", tooltip)
+        return self
+
+    def set_validation(self, validation_func, field_name: str = None):
         """Adds a validation func to the last added field, overriding any default validation"""
-        self.__update_last_field("validation_func", validation_func)
+        self.__update_uifield(field_name, "validation_func", validation_func)
         return self
 
-    def set_focus(self):
+    def set_validation_single(self, validation_func: Callable, field_name: str = None):
+        """
+        Adds a validation func that only relies on in the values of this field
+        :param validation_func: it takes one parameter "value" and returns True or False
+        :param field_name: optional field name to apply validation. Defaults to last available field
+        :return: self
+        """
+        last_field = self.__get_uifield(field_name)
+
+        def new_validation_func(last_field=last_field, **kwargs):
+            return validation_func(kwargs[last_field.name])
+
+        self.set_validation(new_validation_func, field_name)
+        return self
+
+    def set_focus(self, field_name: str = None):
         """Mark last added field as the one that will have focus"""
         if self.dict_ui_fields:
-            self.focus_field = list(self.dict_ui_fields.values())[-1]
+            self.focus_field = self.__get_uifield(field_name)
         return self
 
-    def set_width(self, width: int):
+    def set_width(self, width: int, field_name: str = None):
         """Changes the width of the last element. Returns self to chain"""
-        self.__update_last_field("width", width)
+        self.__update_uifield(field_name, "width", width)
         return self
 
     def __set_button(self, button: _UiBaseButton):
-        self.__update_last_field("button", button)
+        self.__update_uifield(None, "button", button)
         return self
 
-    def show(self) -> dict:
-        """Shows the dialog and return values"""
-        win = _SimpleDialog(title=self.title, description=self.description,
+    def clear(self):
+        """Clears all form fields. Can be chained"""
+        self.dict_ui_fields = dict()
+        self.focus_field = None
+        return self
+
+    def show(self, title: str=None, description: str=None) -> dict:
+        """Shows the dialog and return values. Can override title and description from constructor"""
+        win = _SimpleDialog(title=title or self.title, description=description or self.description,
                             field_list=list(self.dict_ui_fields.values()),
                             parent=self.parent, focus_field=self.focus_field)
         return win.return_values
