@@ -521,48 +521,89 @@ else:
 ```
 
 ## Simple dialogs
-Use `ong_utils.simple_dialog` for build a dialog with custom controls and validations.
-Use `user_domain_password_dialog` for a dialog that shows username, domain and password.
+Use `ong_utils.OngFormDialog` for build a dialog with custom controls and validations.
 
 ### Custom dialog
-Use `ong_utils.dialog` to build a dialog with multiple string entry items and custom validations. You have to inform the elements of the dialog using a list of `ong_utils.ui.UiField` classes
+Use `ong_utils.OngFormDialog` to build a dialog with multiple string entry items and custom validations. 
+You have to add the fields with the `add_*` methods and finally call `show()` to show the form.
+
+You can use the `set_tooltip` method to add tooltips to the fields of the form with thte given text.
+
 
 Sample code to show the following window:
 ![dialog_form_macos.png](img%2Fdialog_form_macos.png)
 ```python
-from ong_utils import simple_dialog, get_current_domain, get_current_user
-from ong_utils.ui import UiField
-# Optional function to validate credentials. Could be other function or None
-from ong_utils import verify_credentials
-field_list = [UiField(name="domain",        # Key of the dict in the return dictionary and for validation functions 
-                      label="Domain",       # Name to the shown for the user
-                      default_value=get_current_domain(),    # Default value to be used
-                      editable=False        # Not editable (by default all fields are editable)
-                      ),
-              UiField(name="username", label="User", default_value=get_current_user()),
-              UiField(name="password", label="Password", default_value="",
-                      show="*",         # Hides password by replacing with *
-                      validation_func=verify_credentials    # The validation function receives values of all fields, so should accept extra **kwargs
-                      ),
-              UiField(name="server", label="Server",
-                      width=40      # Use width parameter to make this Entry field longer. Use it in all to make all fields longer
-                      ),
-              # This shows a combo box with values Yes and No, selecting Yes as default
-              UiField(name="combo", label="Select one",
-                      valid_values=['Yes', "No"],
-                      default_value="Yes",
-                      ),
-              # This shows an entry field to select a File, but  allows empty values (returns "")
-              UiField(name="file", label="Select File",
-                      allow_empy=True,
-                      button=UiFileButton()
-                      ),
-              
-              ]
-# Call the function to open the login window with custom options
-res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
-                   field_list=field_list)
-print(res)
+from ong_utils import OngFormDialog, get_current_user, get_current_domain, verify_credentials
+
+
+frm = OngFormDialog(title="Sample form", description="Show descriptive message for the user")
+#############
+# Option 1: create the form manually, adding each field one by one
+#############
+frm.add_entry_field(name="domain",  # Key of the dict in the return dictionary and for validation functions
+                    label="Domain",  # Name to the shown for the user
+                    default_value=get_current_domain(),  # Default value to be used
+                    editable=False,  # Not editable (by default all fields are editable)
+                    )
+frm.add_entry_field(name="username", label="User", default_value=get_current_user())
+frm.add_entry_field(name="password", label="Password", default_value="").set_validation(
+    # The validation function receives values of all fields, so should accept extra **kwargs
+    validation_func=verify_credentials
+).set_show("*")  # Hide input with asterisks
+frm.add_entry_field(name="server", label="Server").set_width(
+    40  # Make this field wider
+)
+
+# Show the form and collect values
+res = frm.show()
+if res:     # if empty, user cancelled
+    print(res)  # Dict with the results
+
+#############
+# Option 2: use the default functions for user, domain and password
+#############
+frm.clear()     # clear all fields of the form
+# Add domain, user and password, chaining. User and domain are not editable by default,
+# so they are made editable with the editable parameter.
+# Use validate_os to False to avoid validating against system
+frm.add_domain_field(editable=True).add_user_field(editable=True
+                                                   ).add_password_field(validate_os=False)
+# Same as above: frm.add_domain_user_password(validate_os=False)
+# add the rest of the fields
+frm.add_entry_field(name="server", label="Server").set_width(
+    40  # Make this field wider
+)
+# Show the form and collect values
+res = frm.show()
+if res:     # if empty, user cancelled
+    print(res)  # Dict with the results
+```
+### Additional fields (File, folder, combobox, checkbox)
+The `OngFormDialog` supports other fields, such as comboboxes, checkboxes and selectors for files and folders:
+```python
+from ong_utils import OngFormDialog, get_current_user, get_current_domain, verify_credentials
+
+
+frm = OngFormDialog(title="Sample form", description="Show descriptive message for the user")
+##########
+# Other fields
+##########
+frm.clear()
+# This shows a combo box with values Yes and No, selecting Yes as default
+frm.add_combo_field(name="combo", label="Select one",
+                    valid_values=['Yes', "No"],
+                    default_value="Yes",
+                    )
+# This shows an entry field to select a File, but  allows empty values (returns "")
+frm.add_file_field(name="file", label="Select File", empty_ok=True)
+# This shows an entry field to select a Folder, but  allows empty values (returns "")
+frm.add_folder_field(name="folder", label="Select Folder", empty_ok=True)
+# A checkbox that returns True/False
+frm.add_boolean_field(name="bool", label="Select/Unselect", default_value=True)
+# Show the form and collect values
+res = frm.show()
+if res:     # if empty, user cancelled
+    print(res)  # Dict with the results```
 ```
 
 ### Login dialog form for username, domain and password
@@ -570,7 +611,7 @@ In the case of a simple login form such as
 ![login_form_macos.png](img%2Flogin_form_macos.png)
 use the following code
 ```python
-from ong_utils import user_domain_password_dialog
+from ong_utils import OngFormDialog
 
 def validation(**kwargs) -> bool:
   """A function that receives a dict and returns bool
@@ -582,55 +623,14 @@ def validation(**kwargs) -> bool:
   else:
     return False
 
-# This will show a form with current username and domain (not editable) and a password (that will be shown with *)
-result = user_domain_password_dialog(title="your title goes here",
-                                     description="A label to show context to the user",
-                                     validate_password=validation, # pass None to skip validation
-                                     parent=None    # or the main window to use
-                                     )
+# By default, password is validated against current OS. If you want to override it,
+# you need to add validate_os=False and supply your own validation function
+result = OngFormDialog(title="your title goes here",
+                       description="A label to show context to the user",
+                       ).add_domain_user_password(
+    validate_os=False).set_validation(validation, field_name="password").show()
 print(result)   # could be {} if user cancelled or a dict of "username", "domain", "password"
 ```
-## Selecting folders, files and viewing passwords
-Use the `button` property of the `UiField` to allow selecting files, folders and viewing passwords, by creating a button 
-to the right of the entry fields: 
-* Add a `UiFileButton()` to select and validate for exiting files
-* Add a `UiFolderButton()` to select and validate for exiting folders
-* Add a `UiPasswordButton()` to a password field to show or hide passwords
-See the code bellow for this example:
-![dialog_buttons_win.png](img%2Fdialog_buttons_win.png)
-````python
-from ong_utils import simple_dialog
-from ong_utils.ui import UiField, UiFileButton, UiPasswordButton, UiFolderButton
-field_list = [UiField(name="domain",  # Key of the dict in the return dictionary and for validation functions
-                      label="Domain",  # Name to the shown for the user
-                      default_value="fake domain",  # Default value to be used
-                      editable=False  # Not editable
-                      ),
-              UiField(name="username", label="User", default_value="fake user",
-                      editable=False,
-                      ),
-              UiField(name="password", label="Password", default_value="",
-                      show="*",  # Hides password by replacing with *
-                      # validation_func=verify_credentials
-                      # The validation function receives values of all fields, so should accept extra **kwargs
-                      button=UiPasswordButton(),
-                      ),
-              UiField(name="server", label="Server",
-                      width=40),
-              # Will ask for a folder and validate that exists
-              UiField(name="folder", label="Folder", button=UiFolderButton(), width=80),
-              # Will ask for a file and validate that exists
-              UiField(name="file", label="File", button=UiFileButton(), width=90),
-              # Will ask for a file and validate that exists. If field is empty does not validate it and returns ""
-              UiField(name="empty_file", label="File (empty)", button=UiFileButton(), width=90,
-                      allow_empy=True),
-              ]
-# Call the function to open the login window with custom options
-res = simple_dialog(title="Sample form", description="Show descriptive message for the user",
-                    field_list=field_list)
-print(res)
-
-````
 
 ## Print and logging tkinter handlers
 You can use `print2widget` and `log2widget` to redirect any `print` or log to an Entry tkinter widget. See the following example:
