@@ -224,6 +224,12 @@ class TestUI(unittest.TestCase):
             validate_os=False).set_validation(validation, field_name="password").show()
         print(result)
 
+    def test_batch_dialog(self):
+        """Tests that show batch works properly"""
+        result = self.dialog.add_entry_field(name="example", label="Example").\
+            add_entry_field(name="other", label="Other").show_batch()
+        print(result)
+        self.assertTrue(isinstance(result, list))
 
 
 if __name__ == '__main__':

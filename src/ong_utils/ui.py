@@ -10,14 +10,16 @@ import os.path
 import warnings
 from dataclasses import dataclass
 from functools import partial
-from tkinter import filedialog
+from tkinter import filedialog, Menu
 from tkinter import ttk, messagebox, END, Toplevel
 from tkinter.simpledialog import Dialog
 from typing import List, Callable
 
+import pandas as pd
+
 from ong_utils.utils import get_current_domain, get_current_user
 from ong_utils.credentials import verify_credentials
-from ong_utils import is_windows, AdditionalRequirementException
+from ong_utils import is_windows, AdditionalRequirementException, raise_extra_install
 
 
 def fix_windows_gui_scale():
@@ -198,7 +200,7 @@ class _UiFieldButton(UiField):
 
 class _SimpleDialog(Dialog):
     def __init__(self, title: str, description: str, field_list: List[UiField], parent=None,
-                 focus_field: UiField = None):
+                 focus_field: UiField = None, create_batch: bool=False):
         self.description = description
         self.field_list = field_list
         self.__values = dict()
@@ -208,6 +210,7 @@ class _SimpleDialog(Dialog):
         self.focus_field = focus_field
         self.tooltip = None
         self.parent = parent
+        self.create_batch = create_batch
         super().__init__(self.parent, title)
 
     def show_tooltip(self, event=None):
@@ -294,12 +297,61 @@ class _SimpleDialog(Dialog):
                 focus = entry
             elif field is self.focus_field:
                 focus = entry
+        if self.create_batch:
+            self.create_batch_menu()
         return focus
 
-    def validate(self):
+    def create_batch_menu(self) -> None:
+        """Creates a menu for the form that is able to read an Excel sheet. Needs additional libraries"""
+        try:
+            import pandas as pd
+        except ImportError:
+            raise_extra_install("xlsx")
+        # Adds two additional buttons, one for read XLS one for write
+        menubar = Menu(self, tearoff=0)
+        batch_menu = Menu(menubar, tearoff=0)
+        batch_menu.add_cascade(label="Create XLSX template", command=self.handle_write_xls)
+        batch_menu.add_separator()
+        batch_menu.add_cascade(label="Read XLSX batch", command=self.handle_read_xls)
+        menubar.add_cascade(menu=batch_menu, label="Batch")
+        self.config(menu=menubar)
+
+    def handle_read_xls(self):
+        """Opens an Excel sheet, reads all rows and for each row create a dict so retval will be a list of dicts"""
+        filename = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
+        retval = []
+        if filename:
+            df = pd.read_excel(filename, index_col=None)
+            if diff := set(self.ui_fields.keys()).difference(df.columns):
+                messagebox.showerror(_("Error"), f"File {filename} does not contain the following required columns "
+                                                 f"{diff}")
+                return
+            for idx, row in df.iterrows():
+                values = {k: row[k] for k in self.ui_fields.keys()}
+                self.__values = values
+                if not self.validate(update_values=False):
+                    return
+                retval.append(values)
+            self.__values = retval
+            self.withdraw()
+            self.update_idletasks()
+            self.cancel()
+
+    def handle_write_xls(self):
+        """Writes an empty Excel file to serve as template for inserting many values"""
+        filename = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+        if filename:
+            try:
+                df = pd.DataFrame(columns=list(self.ui_fields.keys()))
+                df.to_excel(filename, index=False)
+            except Exception as e:
+                messagebox.showerror(_("Error"), f"File {filename} could not be written. Reason: {e}")
+
+    def validate(self, update_values: bool = True):
         """Validates form, returning 1 if ok and 0 otherwise. Shows error messages if it does not work"""
         try:
-            self.update_values()
+            if update_values:
+                self.update_values()
             for field in self.field_list:
                 # Do not validate if field is empty and allow_empty = True
                 if field.allow_empy and not self.__values[field.name]:
@@ -521,12 +573,17 @@ class OngFormDialog:
         self.focus_field = None
         return self
 
-    def show(self, title: str=None, description: str=None) -> dict:
+    def show(self, title: str=None, description: str=None, show_batch: bool=False) -> dict | list:
         """Shows the dialog and return values. Can override title and description from constructor"""
         win = _SimpleDialog(title=title or self.title, description=description or self.description,
                             field_list=list(self.dict_ui_fields.values()),
-                            parent=self.parent, focus_field=self.focus_field)
+                            parent=self.parent, focus_field=self.focus_field,
+                            create_batch=show_batch)
         return win.return_values
+
+    def show_batch(self, title: str=None, description: str=None) -> dict | list:
+        """Shows dialog with the batch menu and potentially returns a list of dicts"""
+        return self.show(title=title, description=description, show_batch=True)
 
 
 def simple_dialog(title: str, description: str, field_list: List[UiField], parent=None) -> dict:
