@@ -90,7 +90,7 @@ class Chrome:
                 self.__driver = selenium_webdriver.Chrome(options=options)
         except selenium.common.exceptions.SessionNotCreatedException as snce:
             if is_mac():   # is macos
-                cmd = "sudo killall Google\ Chrome"
+                cmd = r"sudo killall Google\ Chrome"
                 print(f"Could not create session. Try executing '{cmd}'")
             raise
         except selenium.common.exceptions.NoSuchDriverException as nsde:
