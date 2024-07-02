@@ -548,7 +548,9 @@ frm.add_entry_field(name="domain",  # Key of the dict in the return dictionary a
 frm.add_entry_field(name="username", label="User", default_value=get_current_user())
 frm.add_entry_field(name="password", label="Password", default_value="").set_validation(
     # The validation function receives values of all fields, so should accept extra **kwargs
-    validation_func=verify_credentials
+    validation_func=verify_credentials,
+    # The otional validation_error_message to give an informative message to the user additional to "invalid field"
+    validation_error_message="Please provide a valid user/password"
 ).set_show("*")  # Hide input with asterisks
 frm.add_entry_field(name="server", label="Server").set_width(
     40  # Make this field wider

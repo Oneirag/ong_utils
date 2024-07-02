@@ -231,6 +231,17 @@ class TestUI(unittest.TestCase):
         print(result)
         self.assertTrue(isinstance(result, list))
 
+    def test_multiline_dialog(self):
+        """Tests that a multiline dialog works properly"""
+        default_value = "\n".join(["this", "is", "a", "test"])
+        self.dialog.add_entry_field(name="data", label="data", default_value=default_value).\
+            set_height(height=8)
+        self.dialog.add_entry_field(name="url", label="Url")
+        result = self.dialog.show()
+        print(result)
+        self.assertTrue(isinstance(result, dict))
+        self.assertSequenceEqual(result['data'], default_value)
+
 
 if __name__ == '__main__':
     unittest.main()

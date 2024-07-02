@@ -7,11 +7,12 @@ import abc
 import gettext
 import locale
 import os.path
+import tkinter
 import warnings
 from dataclasses import dataclass
 from functools import partial
 from tkinter import filedialog, Menu
-from tkinter import ttk, messagebox, END, Toplevel
+from tkinter import ttk, messagebox, END, Toplevel, scrolledtext
 from tkinter.simpledialog import Dialog
 from typing import List, Callable
 
@@ -161,6 +162,8 @@ class UiField:
     show: str = None  # For passwords use "*"
     # Validation function, that will receive all field names of the window, so need **kwargs
     validation_func: Callable[[dict], bool] = None
+    # Validation error message, an extra, descriptibe message for the user when validation fails
+    validation_error_message: str = None
     # state of the tk.Entry. True is editable, false will make not editable
     editable: bool = True
     # Width parameter of an Entry field, make it longer if needed
@@ -173,6 +176,8 @@ class UiField:
     valid_values: List[str] = None
     # Description: a str to show additional info to the user on the field
     description: str = None
+    # Height of the field. If above 1, creates a scrollText field
+    height: int = 1
 
     @property
     def state(self):
@@ -277,10 +282,16 @@ class _SimpleDialog(Dialog):
                     if field.default_value in field.valid_values:
                         entry.set(field.default_value)
             else:
-                entry = ttk.Entry(master, show=field.show, width=field.width,
-                                  #textvariable=self.variables[field.name]
-                                  )
-                entry.insert(0, field.default_value)
+                if field.height <= 1:
+                    entry = ttk.Entry(master, show=field.show, width=field.width,
+                                      #textvariable=self.variables[field.name]
+                                      )
+                    entry.insert(0, field.default_value)
+                else:
+                    entry = scrolledtext.ScrolledText(master, show=field.show, width=field.width,
+                                                      wrap=tkinter.WORD, height=field.height)
+                    entry.insert("1.0", field.default_value)
+
             if not field.editable:
                 # entry.configure(state='readonly')
                 entry.configure(state=_STATE_DISABLED)
@@ -300,6 +311,13 @@ class _SimpleDialog(Dialog):
         if self.create_batch:
             self.create_batch_menu()
         return focus
+
+    def buttonbox(self):
+        super().buttonbox()
+        # Removes bind on return to allow adding more lines if height > 1
+        for field in self.field_list:
+            if field.height > 1:
+                self.unbind("<Return>")
 
     def create_batch_menu(self) -> None:
         """Creates a menu for the form that is able to read an Excel sheet. Needs additional libraries"""
@@ -359,7 +377,10 @@ class _SimpleDialog(Dialog):
                 try:
                     if ((field.validation_func and not field.validation_func(**self.__values)) or
                             field.button and not field.button.validate(self.__values[field.name])):
-                        messagebox.showerror(_("Error"), _("Invalid field") + ": " + _(field.label))
+                        error_msg = _("Invalid field") + ": " + _(field.label)
+                        if field.validation_error_message:
+                            error_msg += f"\n{field.validation_error_message}"
+                        messagebox.showerror(_("Error"), error_msg)
                         return 0
                 except AdditionalRequirementException as are:
                     messagebox.showerror(_("Error"), _("Additional requirements for validating field") + f": {are}")
@@ -374,8 +395,15 @@ class _SimpleDialog(Dialog):
     def update_values(self):
         for field in self.field_list:
             # self.__values[field.name] = self.variables.get(field.name).get() if field.name in self.variables else None
-            self.__values[field.name] = self.ui_fields.get(field.name).get() if field.name in self.ui_fields else None
-
+            if field.name not in self.ui_fields:
+                field_value = None
+            else:
+                ui_field = self.ui_fields.get(field.name)
+                if not isinstance(ui_field, scrolledtext.ScrolledText):
+                    field_value = ui_field.get()
+                else:
+                    field_value = ui_field.get("1.0", "end-1c")
+            self.__values[field.name] = field_value
     @property
     def return_values(self) -> dict:
         """Returns a dict of field names and values, or an empty dict if validation failed"""
@@ -532,16 +560,19 @@ class OngFormDialog:
         self.__update_uifield(field_name, "description", tooltip)
         return self
 
-    def set_validation(self, validation_func, field_name: str = None):
+    def set_validation(self, validation_func, field_name: str = None, validation_error_message: str = None):
         """Adds a validation func to the last added field, overriding any default validation"""
         self.__update_uifield(field_name, "validation_func", validation_func)
+        self.__update_uifield(field_name, "validation_error_message", validation_error_message)
         return self
 
-    def set_validation_single(self, validation_func: Callable, field_name: str = None):
+    def set_validation_single(self, validation_func: Callable, field_name: str = None,
+                              validation_error_message: str = None):
         """
         Adds a validation func that only relies on in the values of this field
         :param validation_func: it takes one parameter "value" and returns True or False
         :param field_name: optional field name to apply validation. Defaults to last available field
+        :param validation_error_message: extra, informative message for the user when validation fails
         :return: self
         """
         last_field = self.__get_uifield(field_name)
@@ -549,7 +580,7 @@ class OngFormDialog:
         def new_validation_func(last_field=last_field, **kwargs):
             return validation_func(kwargs[last_field.name])
 
-        self.set_validation(new_validation_func, field_name)
+        self.set_validation(new_validation_func, field_name, validation_error_message)
         return self
 
     def set_focus(self, field_name: str = None):
@@ -561,6 +592,11 @@ class OngFormDialog:
     def set_width(self, width: int, field_name: str = None):
         """Changes the width of the last element. Returns self to chain"""
         self.__update_uifield(field_name, "width", width)
+        return self
+
+    def set_height(self, height: int, field_name: str = None):
+        """Changes height of the last element. If height > 1, then a scrolled text is created"""
+        self.__update_uifield(field_name, "height", height)
         return self
 
     def __set_button(self, button: _UiBaseButton):
