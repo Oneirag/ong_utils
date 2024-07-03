@@ -19,7 +19,8 @@ of the computer).
 * functions to get current user and domain. [Read more](#get-current-user-and-domain)
 * functions for simple input dialogs with validations using tk [Read more](#simple-dialogs)
 * a function `fix_windows_gui_scale` to avoid blurry tkinter text elements in Windows 10 or 11. [Read more](#fix-windows-scaling)
-* Handlers to redirect prints and logging to an Entry tkinter widget [Read more](#print-and-logging-tkinter-handlers)
+* handlers to redirect prints and logging to an Entry tkinter widget [Read more](#print-and-logging-tkinter-handlers)
+* a function to execute a coroutine out of an async function `asyncio_run` 
 ### Optional dependencies
 Installing `pip install ong_utils[shortcuts]`:
 * functions to create desktop shortcuts for packages installed with pip. [Read more](#make-shortcuts-for-entry-points)
@@ -680,3 +681,17 @@ import tkinter as tk
 from tkinter import ttk
 # write your GUI code here...
 ````
+## Execute coroutines out of an async function
+When debugging, you might want to execute a coroutine from the console. Use `asyncio_run` for that
+
+```python
+from ong_utils import asyncio_run
+
+
+async def my_coroutine():
+  ...
+
+
+asyncio_run(my_coroutine()) # Use it wherever. Runs coroutine synchronously
+
+```

@@ -7,4 +7,5 @@ pyyaml
 ujson
 idna
 keyring                                 # for storing passwords (or whatever!)
+nest-asyncio                            # for run asyncio in jupyter
 
