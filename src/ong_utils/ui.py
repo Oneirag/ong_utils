@@ -475,12 +475,12 @@ class OngFormDialog:
         default_value = default_value if default_value is not None else get_current_user()
         return self.add_entry_field(name=name, label=label, default_value=default_value, editable=editable)
 
-    def add_password_field(self, default_value: str = "", validate_os: bool = True):
+    def add_password_field(self, default_value: str = "", validate_os: bool = True, name: str = None, label: str = None):
         """Creates a password field. By default, it is named "password", labeled 'Password',
         is editable and validates against the OS. If you don't want password to be validated,
         call afterward add_validation with None"""
-        name = "password"
-        label = "Password"
+        name = name or label or "password"
+        label = label or "Password"
         self.add_entry_field(name=name, label=label, default_value=default_value, editable=True)
         bullet = "\u2022"  # specifies bullet character
         self.__update_uifield(None, "show", bullet)
