@@ -136,7 +136,7 @@ class _WidgetWriter:
     def write_to_widget(self, msg: str):
         """appends given text to widget"""
         self.widget.configure(state='normal')
-        segments = _interpret_ansi(msg + '\n')
+        segments = _interpret_ansi(msg)
         _apply_ansi_styles(self.widget, segments)
 
         # self.widget.insert('end', msg + '\n')
@@ -186,7 +186,7 @@ class LogTextHandler(Handler, _WidgetWriter):
             if record.levelno in self.color_map:
                 color = self.color_map.get(record.levelno, self.reset)
                 log_entry = color + log_entry + self.reset
-            self.write_to_widget(log_entry)
+            self.write_to_widget(log_entry + '\n')
         except tk.TclError as te:
             sys.stderr.write(str(te))
             sys.stderr.flush()

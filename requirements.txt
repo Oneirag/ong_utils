@@ -1,4 +1,4 @@
-pip_system_certs                       # Not needed for this package but helpful for avoiding https errors in windows
+pip_system_certs; os_name == 'nt'                       # Not needed for this package but helpful for avoiding https errors in windows
 certifi
 urllib3
 pyopenssl
