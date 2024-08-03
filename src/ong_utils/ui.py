@@ -35,7 +35,7 @@ fix_windows_gui_scale()
 
 # Configure localization
 locale.setlocale(locale.LC_ALL, "")  # Use the system's default locale
-lang = locale.getlocale()[0]
+lang = locale.getlocale()[0] or "es_ES"     # Defaults to Spanish if no Locale was defined
 translation = gettext.translation("messages", localedir="locales", languages=[lang], fallback=True)
 translation.install()
 
