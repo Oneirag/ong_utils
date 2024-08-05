@@ -21,6 +21,9 @@ from ong_utils.urllib3_utils import create_pool_manager, cookies2header, get_coo
 from ong_utils.utils import (LOCAL_TZ, is_debugging, to_list, is_mac, is_linux, is_windows, get_current_user,
                              get_current_domain)
 from ong_utils.web import find_available_port
+
+__version__ = "1.0.1"
+
 try:
     from ong_utils.ui import simple_dialog, user_domain_password_dialog, fix_windows_gui_scale, OngFormDialog
     from ong_utils.ui_logging_utils import print2widget, logger2widget
