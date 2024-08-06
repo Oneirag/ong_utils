@@ -324,9 +324,8 @@ There are two ways to create shortcuts:
   script that creates the desktop launcher and modifies the wheel file (so they can be uninstalled) after building the
   wheel file from sources.
 * **Create a script and run it manually after install:** valid for any other case. Create a entry_point
-  e.g. `post_install` and call it manually after installation. That scritp will create the shortcut(s) and add it/them
-  to
-  the `RECORD`file so the shortcut will be later uninstalled
+  e.g. `post_install` and call it manually after installation. That script will create the shortcut(s) and add it/them
+  to the `RECORD` file so the shortcut will be later uninstalled
 
 ### Create the shortcut when installing with PIP
 

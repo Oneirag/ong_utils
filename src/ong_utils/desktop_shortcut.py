@@ -15,6 +15,7 @@ import zipfile
 from importlib.metadata import distribution
 
 from ong_utils.import_utils import raise_extra_exception
+from ong_utils import is_mac
 try:
     import pyshortcuts.shortcut
     from pyshortcuts import make_shortcut, platform, shortcut, get_folders
@@ -31,13 +32,13 @@ def is_pip() -> bool:
         return False
 
 
-def get_name_script(entry_points) -> list:
+def get_name_script_terminal(entry_points) -> list:
     """
     Takes a distribution object and returns a list of tuples for each entry point with the script name and the
     module to be executed
     Example: for "script1 = package.file:function" [("script1", "package.file")]
     :param entry_points: the list of entry points (result of  self.distribution.entry_points)
-    :return:
+    :return: the entry point command, the entry point name and a boolean that says if it is a terminal app (True) or not
     """
     retval = []
 
@@ -56,12 +57,12 @@ def get_name_script(entry_points) -> list:
             name, script = map(str.strip, console_script.split("="))
             script = script_to_shortcut(script)
             if script:
-                retval.append((name, script))
+                retval.append((name, script, True))         # Console script
     else:
         for ep in entry_points:
             script = script_to_shortcut(ep.value)
             if script:
-                retval.append((ep.name, script))
+                retval.append((ep.name, script, False if ep.group != "console_scripts" else True))     # Not a console script
     return retval
 
 
@@ -103,15 +104,15 @@ class PipCreateShortcut(bdist_wheel):
     def append_scut_record(self) -> str:
         """Creates a shortcut for every entry point"""
         retval = ""
-        for name, script in get_name_script(self.distribution.entry_points):
+        for name, script, is_terminal in get_name_script_terminal(self.distribution.entry_points):
             iconfile = 'shovel.icns' if platform.startswith('darwin') else 'shovel.ico'
             # Not needed: shortcuts are not overwritten using make_shortcut
             # scut = shortcut(script=script, name=name, userfolders=get_folders())
             # if os.path.exists(scut_filename):
             #     os.remove(scut_filename)
             scut = make_shortcut(script=script, name=name, icon=None,
-                                 description="",
-                                 startmenu=False)
+                                 description="", terminal=is_terminal,
+                                 startmenu=False if is_mac else True)
             scut_filename = os.path.join(scut.desktop_dir, scut.target)
             for record in file2record(scut_filename):
                 retval += f"{record}\n"
@@ -213,7 +214,7 @@ class PostInstallCreateShortcut:
         return iconfile
 
     def make_shortcuts(self):
-        for name, script in get_name_script(self.distribution.entry_points):
+        for name, script, is_terminal in get_name_script_terminal(self.distribution.entry_points):
             # files = list(f for f in entry_point.dist.files)
             # TODO: test if this script works in windows
             # script = os.path.normpath(files[0].locate().as_posix())
@@ -227,12 +228,15 @@ class PostInstallCreateShortcut:
             iconfile = self.find_icon(name)
             scut = shortcut(script=script, name=name, userfolders=get_folders(), icon=iconfile)
             scut_filename = os.path.join(scut.desktop_dir, scut.target)
-            # In order to add icons once installed, overwrite the shorcut anyway
+            # In order to add icons once installed, overwrite the shortcut anyway
             # if os.path.exists(scut_filename):
             #     continue  # If shortcut existed, skip
             retva = make_shortcut(script=script, name=name, icon=iconfile,
                                   description="",
-                                  startmenu=False)
+                                  terminal=is_terminal,
+                                  # Add it to start menu if is windows/linux
+                                  startmenu=False if is_mac else True
+                                  )
 
             self.add_file_record(retva)
 
