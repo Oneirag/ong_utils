@@ -14,8 +14,9 @@ import tempfile
 import zipfile
 from importlib.metadata import distribution
 
-from ong_utils.import_utils import raise_extra_exception
 from ong_utils import is_mac
+from ong_utils.import_utils import raise_extra_exception
+
 try:
     import pyshortcuts.shortcut
     from pyshortcuts import make_shortcut, platform, shortcut, get_folders
@@ -57,12 +58,13 @@ def get_name_script_terminal(entry_points) -> list:
             name, script = map(str.strip, console_script.split("="))
             script = script_to_shortcut(script)
             if script:
-                retval.append((name, script, True))         # Console script
+                retval.append((name, script, True))  # Console script
     else:
         for ep in entry_points:
             script = script_to_shortcut(ep.value)
             if script:
-                retval.append((ep.name, script, False if ep.group != "console_scripts" else True))     # Not a console script
+                retval.append(
+                    (ep.name, script, False if ep.group != "console_scripts" else True))  # Not a console script
     return retval
 
 
@@ -213,29 +215,34 @@ class PostInstallCreateShortcut:
             iconfile = iconfile[0].locate().as_posix()
         return iconfile
 
-    def make_shortcuts(self):
+    def make_shortcuts(self, folder=None, descriptions: dict = None, working_dir=None, executable=None):
+        """
+        Creates a shortcut in desktop
+        :param folder: optional folder where shortcut will be created
+        :param descriptions: optional dictionary of descriptions for the shortcuts. They must be indexed by
+        the name of the script.
+        :param working_dir: working dir for the shortcut, defaults to home dir (!!!)
+        :param executable: python executable. Uses calling python as default
+        :return: None
+        """
+        descriptions = descriptions or dict()
         for name, script, is_terminal in get_name_script_terminal(self.distribution.entry_points):
-            # files = list(f for f in entry_point.dist.files)
-            # TODO: test if this script works in windows
-            # script = os.path.normpath(files[0].locate().as_posix())
-            # splits = eps[0].value.split(':')
-            # module = splits[0]
-            # function = splits[1] if len(splits) > 1 else None
-            # if not function:
-            # else:
-            #     This DOES NOT WORK at least in mac, no matter if using " or '
-            #     script = f'_ -c "from {module} import {function};{function}()"'
             iconfile = self.find_icon(name)
             scut = shortcut(script=script, name=name, userfolders=get_folders(), icon=iconfile)
             scut_filename = os.path.join(scut.desktop_dir, scut.target)
             # In order to add icons once installed, overwrite the shortcut anyway
             # if os.path.exists(scut_filename):
             #     continue  # If shortcut existed, skip
+            if executable and script.startswith("_"):
+                script = executable + script[1:]
             retva = make_shortcut(script=script, name=name, icon=iconfile,
-                                  description="",
+                                  description=descriptions.get(name, ""),
                                   terminal=is_terminal,
+                                  folder=folder,
                                   # Add it to start menu if is windows/linux
-                                  startmenu=False if is_mac else True
+                                  startmenu=False if is_mac else True,
+                                  working_dir=working_dir,
+                                  # executable=executable,
                                   )
 
             self.add_file_record(retva)
@@ -245,6 +252,3 @@ if __name__ == '__main__':
     sci = PostInstallCreateShortcut()
     sci.make_shortcuts()
 
-"""
-flat couch vector, minimalist, in style of SKSKS app icon
-"""
