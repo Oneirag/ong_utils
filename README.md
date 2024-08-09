@@ -371,6 +371,12 @@ from ong_utils.desktop_shortcut import PostInstallCreateShortcut
 
 def main():
     PostInstallCreateShortcut("your_library_name").make_shortcuts()
+    # You can customize the shortcuts a little bit
+    PostInstallCreateShortcut("your_library_name").make_shortcuts(folder="subfolder name of desktop to place shortcuts",
+                                                                  descriptions={"name_of_script": "Description of the shortcut"},
+                                                                  working_dir="path of the working dir",
+                                                                  executable="path of the python executable. In macos could not work properly if executable links to the global python executable. If so, use sys.executable")
+    
 
 
 if __name__ == '__main__':
