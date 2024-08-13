@@ -384,8 +384,10 @@ class _SimpleDialog(Dialog):
                         return 0
                 except AdditionalRequirementException as are:
                     messagebox.showerror(_("Error"), _("Additional requirements for validating field") + f": {are}")
+                    return 0
                 except Exception as e:
                     messagebox.showerror(_("Error"),f"{e}")
+                    return 0
             self.validated = True
             return 1
         except Exception as e:
