@@ -85,6 +85,7 @@ class OngConfig:
         self.config_filename = None
         for ext, (loader, _) in self.extensions_cfg.items():
             if cfg_filename:
+                cfg_filename = str(cfg_filename)
                 if cfg_filename.endswith(ext):
                     config_filename = self._get_cfg_filename(filename=cfg_filename)
                 else:
