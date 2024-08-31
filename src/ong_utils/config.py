@@ -3,6 +3,7 @@ import logging
 import logging.config
 import os
 import warnings
+from pathlib import Path
 
 import keyring
 import ujson
@@ -53,9 +54,11 @@ class OngConfig:
 
     def __init__(self, project_name: str, cfg_filename: str = None,
                  default_app_cfg: dict = None, default_log_cfg: dict = None,
-                 default_test_cfg: dict = None, write_default_file: bool = False):
+                 default_test_cfg: dict = None, write_default_file: bool = False,
+                 config_path: str | Path = None, log_config_path: Path | str = None):
         """
-        Reads configurations from f"~/.config/ongpi/{project_name}.{extension}"
+        Reads configurations from f"{config_path}/{project_name}.{extension}" and writes logs to
+        f"{config_path}../.logs/{project_name}.{extension}"
         :param project_name: the name of the project. Configuration for the project will be read from this key
             in the yaml/json file
         :param cfg_filename: an optional filename for the configuration (including extension). If not informed, the
@@ -66,14 +69,19 @@ class OngConfig:
         :param write_default_file: if False (default), raises Exception if default file is not found. If True
          and default_app_cfg is not None, writes a default file in case it does not exit and continues with default
          values
+        :param config_path: Path from where config file will be read. Defaults to ~/.config/ongpi
+        :param log_config_path: Path where logs will be written. Defaults to ~/.logs
         """
         self.project_name = project_name
         self.test_project_name = f"{self.project_name}_test"
-        self.config_path = os.path.expanduser(os.environ.get("ONG_CONFIG_PATH",
-                                                             os.path.join("~", ".config", "ongpi")))
+        self.config_path = Path(config_path or os.environ.get("ONG_CONFIG_PATH", "~/.config/ongpi")).expanduser()
+        self.log_config_path = Path(log_config_path or os.environ.get("ONG_LOG_PATH", "~/.logs")).expanduser()
+        self.config_path.mkdir(exist_ok=True, parents=True)
+        self.log_config_path.mkdir(exist_ok=True, parents=True)
         self.__app_cfg = default_app_cfg or dict()
         self.__test_cfg = default_test_cfg or dict()
-        self.__log_cfg = default_log_cfg or _default_logger_config(app_name=self.project_name)
+        self.__log_cfg = default_log_cfg or _default_logger_config(app_name=self.project_name,
+                                                                   log_config_path=self.log_config_path)
         self.config_filename = None
         for ext, (loader, _) in self.extensions_cfg.items():
             if cfg_filename:
@@ -234,7 +242,8 @@ class OngConfig:
                 self.logger.removeHandler(handler)
 
 
-def _default_logger_config(app_name: str):
+def _default_logger_config(app_name: str, log_config_path: str | Path= "~/.log/"):
+    """Creates a default log config, that saves to log_config path (defaults to ~/.log) """
     log_cfg = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -256,7 +265,8 @@ def _default_logger_config(app_name: str):
             'logfile': {
                 'level': 'DEBUG',
                 'class': 'logging.handlers.RotatingFileHandler',
-                'filename': f'~/.log/{app_name}.log',  # Filename be formatted later replacing app_name placeholder
+                # Filename will be formatted later replacing app_name placeholder. Takes into account config_path also
+                'filename': str(Path(log_config_path) /  f'{app_name}.log'),
                 'maxBytes': 10 * 1024 * 1024,
                 'backupCount': 5,
                 'formatter': 'detailed_formatter'
