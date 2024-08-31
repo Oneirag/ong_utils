@@ -138,6 +138,24 @@ project_name2_test:
 and config method can only access to configuration of current project.
 
 New values can be added to the configuration in execution time by calling `add_app_config`. That will persist the new values in the configuration file.
+### Changing default location for config and logs
+You can use the `config_path` or `log_config_path` parameters of the constructor or the
+`ONG_CONFIG_PATH` or `ONG_LOG_PATH` environment variables to define where the config file and log files will be writen. 
+and overwrite the default values
+```python
+from ong_utils import OngConfig
+
+# Config file will be searched in "~./.config/ongpi/test"
+# Log file will be writen in "~./.logs/test.log"
+cfg = OngConfig("test")     
+
+# Config file will be searched in "~./Documents/a_folder/config"
+# Log file will be writen in "~/Documents/a_folder/log/test.log"
+cfg = OngConfig("test", config_path="~/Documents/a_folder/config",
+                log_config_path="~/Documents/a_folder/log")     
+
+```
+
 ### Passwords
 Module uses keyring to store passwords
 ```python
@@ -155,6 +173,7 @@ set_password("service", "user")
 pwd = get_password("service", "user")
 # Equivalent to keyring.get_password(config("service"), config("user"))
 ```
+# 
 ## Storing long data in keyring
 ### Storing json-serializable data
 For storing long passwords (e.g. a jwt_token) or non string data (e.g. a dictionary of cookies), use `ong_utils.InternalStorage` class.

@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import keyring
@@ -39,7 +40,8 @@ class TestConfig(unittest.TestCase):
             print(cfg_content)
         print(cls.cfg_filename)
 
-        cls.cfg = OngConfig(cls.app_name, cfg_filename=cls.cfg_filename)
+        cls.cfg = OngConfig(cls.app_name, cfg_filename=cls.cfg_filename,
+                            log_config_path=Path(cls.temp_dir.name) / "Logs")
         cls.logger = cls.cfg.logger
         cls.config = cls.cfg.config
         cls.log_filename = cls.cfg._OngConfig__log_cfg['handlers']['logfile']['filename']
