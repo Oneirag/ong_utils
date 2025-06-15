@@ -47,7 +47,7 @@ class _BoolVariableFunction:
 
 
 # Check for debugging, if so run debug server
-is_debugging = _BoolVariableFunction(True if sys.gettrace() else False)
+is_debugging = _BoolVariableFunction(True if (sys.gettrace() is not None or 'debugpy' in sys.modules) else False)
 
 
 def to_list(value) -> list:
